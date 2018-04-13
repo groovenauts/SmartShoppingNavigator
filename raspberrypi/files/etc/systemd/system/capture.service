@@ -1,0 +1,16 @@
+[Unit]
+Description=Capture Still Image and upload
+After=network.target
+
+[Service]
+EnvironmentFile=/home/pi/watchdog.conf
+ExecStart=/home/pi/watchdog.sh
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill $MAINPID
+KillMode=control-group
+Restart=on-failure
+Type=simple
+User=pi
+
+[Install]
+WantedBy=multi-user.target
