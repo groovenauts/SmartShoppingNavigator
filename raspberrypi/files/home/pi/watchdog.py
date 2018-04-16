@@ -119,6 +119,10 @@ def main(argv):
             camera.sharpness = config.get("camera_sharpness", 0)
             camera.contrast = config.get("camera_contrast", 0)
             camera.iso = config.get("camera_iso", 0)
+            url = config.get("dashboard_url")
+            if url:
+                with open("/tmp/dashboard_url", "w") as f:
+                    f.write(url)
         if time.time() - last_captured_at > capture_interval:
             capture_and_upload(camera, project_id, location, registry, device, private_key)
             print("Still image captured.")
