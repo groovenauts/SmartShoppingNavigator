@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Launcher
+Type=Application
+Icon=web-browser
+Exec=/home/pi/dashboard.sh
+Terminal=false
