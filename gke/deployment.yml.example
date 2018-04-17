@@ -1,0 +1,28 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: iost-worker
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: iost-worker
+    spec:
+      containers:
+      - name: iost-worker
+        image: gcr.io/MY-PROJECT-ID/iost-worker:latest
+        env:
+        - name: PROJECT
+          value: MY-PROJECT-ID
+        - name: INPUT_SUBSCRIPTION
+          value: MY-SUBSCRIPTION
+        - name: BUCKET
+          value: my-bucket
+        - name: blocks_url
+          value: "https://xxxxxblocksboardxxxxxx.magellanic-clouts.net/flows/my-flow.json"
+        - name: blocks_token
+          value: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        resources:
+          requests:
+            cpu: "1m"
