@@ -8,6 +8,6 @@ group :development, :test do
   gem 'pry-byebug'
 end
 
-gem "google-api-client", "~> 0.10.0"
+gem "google-api-client"
 gem "kura"
 

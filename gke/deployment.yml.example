@@ -19,10 +19,14 @@ spec:
           value: MY-SUBSCRIPTION
         - name: BUCKET
           value: my-bucket
-        - name: blocks_url
+        - name: BLOCKS_URL
           value: "https://xxxxxblocksboardxxxxxx.magellanic-clouts.net/flows/my-flow.json"
-        - name: blocks_token
+        - name: BLOCKS_TOKEN
           value: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        - name: ML_MODEL
+          value: model_name
+        - name: IOT_REGISTRY
+          value: registry_name
         resources:
           requests:
             cpu: "1m"
