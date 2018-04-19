@@ -10,7 +10,7 @@ def index():
         with open("/tmp/dashboard_url", "r") as f:
             url = f.readline().rstrip()
     else:
-        url = "https://www.magellanic-clouds.com/"
+        url = "https://events.google.com/io/"
     return render_template("index.html",
             url=url, title=title)
 
