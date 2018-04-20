@@ -1,0 +1,15 @@
+[Unit]
+Description=Dashboard
+After=network.target
+
+[Service]
+ExecStart=/home/pi/dashboard/server.sh
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStop=/bin/kill $MAINPID
+KillMode=control-group
+Restart=on-failure
+Type=simple
+User=pi
+
+[Install]
+WantedBy=multi-user.target
