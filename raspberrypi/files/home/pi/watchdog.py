@@ -60,7 +60,7 @@ def upload_image(project_id, location, registry, device, jwt, b64_buf):
         print(res.json())
         filename = time.strftime("/tmp/failure_image_%Y%M%d_%H%M%S.jpg")
         with open(filename, "wb") as f:
-            f.write(base64.urlsafe_b64decode(b64_buf).decode("utf-8"))
+            f.write(base64.urlsafe_b64decode(b64_buf))
         print("Saved failed image to {}".format(filename))
 
 def capture_and_upload(camera, project_id, location, registry, device, private_key):
@@ -95,6 +95,7 @@ def main(argv):
     _, project_id, location, registry, device, private_key = argv
 
     camera = picamera.PiCamera()
+    camera.resolution = (600, 360)
     camera.brightness = 60
     camera.hflip = False
     camera.vflip = False
