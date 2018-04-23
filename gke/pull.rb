@@ -2,6 +2,7 @@
 
 require "yaml"
 require "kura"
+require "rmagick"
 require "google/apis/pubsub_v1"
 require "google/apis/storage_v1"
 require "google/apis/cloudiot_v1"
@@ -43,19 +44,9 @@ class GCS
     obj = Google::Apis::StorageV1::Object.new(name: name)
     @api.insert_object(bucket, obj, upload_source: io, content_type: content_type)
   end
-end
 
-class Blocks
-  def initialize(url, token)
-    @url = URI(url)
-    @token = token
-  end
-
-  def invoke(params)
-    res = Net::HTTP.post_form(@url, params)
-    if res.code != "200"
-      $stderr.puts("BLOCKS flow invocation failed: #{res.code} #{res.body}")
-    end
+  def copy_object(source_bucket, source_object, destination_bucket, destination_object, object_object = nil, destination_predefined_acl)
+    @api.copy_object(source_bucket, source_object, destination_bucket, destination_object, object_object, destination_predefined_acl: destination_predefined_acl)
   end
 end
 
@@ -188,6 +179,10 @@ LABELS = {
   90 => "toothbrush",
 }
 
+def label_to_name(label_id)
+  LABELS[label_id.to_i]
+end
+
 def labels_to_url(detections)
   if detections.find{|label, score| label == "apple" }
     "https://storage.googleapis.com/gcp-iost-contents/apple-pie.jpg"
@@ -198,26 +193,53 @@ def labels_to_url(detections)
   end
 end
 
+def draw_bbox_image(b64_image, predictions, threshold=0.3)
+  original = Magick::Image.read_inline(b64_image)[0]
+  width = original.columns
+  height = original.rows
+  nega = original.negate
+  mask = Magick::Image.new(width, height) { self.background_color = "none" }
+  gc = Magick::Draw.new
+  gc.stroke_color("white")
+  gc.fill_opacity(0)
+  gc.stroke_width(1)
+  gc.text_align(Magick::LeftAlign)
+  gc.font = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+  gc.pointsize = 21
+  rec = predictions
+  rec["detection_scores"].each_with_index do |score, idx|
+    break if score < threshold
+    label = label_to_name(rec["detection_classes"][idx])
+    xmin = (rec["detection_box_xmin"][idx] * width).to_i
+    ymin = (rec["detection_box_ymin"][idx] * height).to_i
+    xmax = (rec["detection_box_xmax"][idx] * width).to_i
+    ymax = (rec["detection_box_ymax"][idx] * height).to_i
+    gc.fill_opacity(0)
+    gc.rectangle(xmin, ymin, xmax, ymax)
+    gc.fill_opacity(1)
+    gc.text(xmin+2, ymin+12, label)
+  end
+  gc.draw(mask)
+  bbox = mask.composite(nega, 0, 0, Magick::SrcInCompositeOp)
+  result = original.composite(bbox, 0, 0, Magick::OverCompositeOp)
+  result.to_blob
+end
+
 def main(config)
   project = config["project"]
   input_subscription = config["input_subscription"]
   bucket = config["bucket"]
-  blocks_url = config["blocks_url"]
-  blocks_token = config["blocks_token"]
   ml_model = config["ml_model"]
   iot_registry = config["iot_registry"]
   $stdout.puts "PubSub:#{input_subscription} -> ML Engine -> GCS(gs://#{bucket}/) & BigQuery"
   $stdout.puts "project = #{project}"
   $stdout.puts "subscription = #{input_subscription}"
   $stdout.puts "bucket = #{bucket}"
-  $stdout.puts "blocks_url = #{blocks_url}"
-  $stdout.puts "blocks_token = #{blocks_token.gsub(/./, "*")}"
   $stdout.puts "ml_model = #{ml_model}"
   $stdout.puts "iot_registry = #{iot_registry}"
   pubsub = Pubsub.new
   gcs = GCS.new
   iot = CloudIot.new
-  blocks = Blocks.new(blocks_url, blocks_token)
 
   loop do
     msgs = pubsub.pull(input_subscription)
@@ -229,18 +251,12 @@ def main(config)
       obj_name = time.strftime("original/#{device}/%Y-%m-%d/%H/%M%S.jpg")
       gcs.insert_object(bucket, obj_name, StringIO.new(m.message.data))
       annotated_name = time.strftime("annotated/#{device}/%Y-%m-%d/%H/%M%S.jpg")
-      blocks.invoke({
-        api_token: blocks_token,
-        published_time: time.iso8601(3),
-        device: device,
-        original_gcs: "gs://#{bucket}/#{obj_name}",
-        annotated_gcs: "gs://#{bucket}/#{annotated_name}",
-      })
       # Load Device config
       last_config = iot.list_device_configs(project, "us-central1", iot_registry, device).first
       data = JSON.parse(last_config.binary_data)
+      b64_image = Base64.strict_encode64(m.message.data)
       # Object Detection prediction
-      pred = ML.predict(project, ml_model, [{"key" => "1", "image" => { "b64" => Base64.strict_encode64(m.message.data) } }])
+      pred = ML.predict(project, ml_model, [{"key" => "1", "image" => { "b64" => b64_image } }])
       objs = pred[0]["detection_classes"].zip(pred[0]["detection_scores"]).select{|label, score| score > 0.2}.map{|label, score| [LABELS[label.to_i], score] }
       $stdout.puts(objs.inspect)
       url = labels_to_url(objs)
@@ -249,6 +265,13 @@ def main(config)
         data["dashboard_url"] = url
         iot.modify_device_config(project, "us-central1", iot_registry, device, data.to_json)
       end
+      # create bounding box image
+      bboxed_image = draw_bbox_image(b64_image, pred.first)
+      gcs.insert_object(bucket, annotated_name, StringIO.new(bboxed_image), content_type: "image/jpeg")
+      #policy = gcs.get_object_iam_policy(bucket, annotated_name)
+      #policy.bindings << Google::Apis::StorageV1::Policy::Binding.new(members: "allUsers", role: "roles/storage.objectViewer")
+      #gcs.set_object_iam_policy(bucket, annotated_name, policy)
+      gcs.copy_object(bucket, annotated_name, bucket, "annotated/#{device}/annotated.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
     end
     pubsub.ack(input_subscription, msgs)
   end
@@ -265,8 +288,6 @@ if $0 == __FILE__
     config["project"] = ENV["PROJECT"]
     config["input_subscription"] = "projects/#{config["project"]}/subscriptions/#{ENV["INPUT_SUBSCRIPTION"]}"
     config["bucket"] = ENV["SAVE_BUCKET"]
-    config["blocks_url"] = ENV["BLOCKS_URL"]
-    config["blocks_token"] = ENV["BLOCKS_TOKEN"]
     config["ml_model"] = ENV["ML_MODEL"]
     config["iot_registry"] = ENV["IOT_REGISTRY"]
   end

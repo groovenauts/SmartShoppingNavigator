@@ -10,4 +10,5 @@ end
 
 gem "google-api-client"
 gem "kura"
+gem "rmagick"
 
