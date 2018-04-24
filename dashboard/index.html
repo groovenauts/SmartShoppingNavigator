@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <title>IoST Demo</title>
+  <link rel="stylesheet" type="text/css" href="/static/style.css">
+</head>
+<body>
+  <script src="/static/js/jquery.min.js"></script>
+
+<h1>IoST Demo</h1>
+
+<form action="/setting" method="post">
+  <div>Season: <input name="season" value="{{.Setting.Season}}" /></div>
+  <div>Period: <input name="period" value="{{.Setting.Period}}" /></div>
+  <input type="submit">
+</form>
+
+</body>
+</html>
