@@ -231,6 +231,7 @@ def main(config)
   bucket = config["bucket"]
   ml_model = config["ml_model"]
   iot_registry = config["iot_registry"]
+  threshold = (config["score_threshold"] || 0.2).to_f
   $stdout.puts "PubSub:#{input_subscription} -> ML Engine -> GCS(gs://#{bucket}/) & BigQuery"
   $stdout.puts "project = #{project}"
   $stdout.puts "subscription = #{input_subscription}"
@@ -247,6 +248,7 @@ def main(config)
     next if msgs.empty?
     msgs.each do |m|
       device = m.message.attributes["deviceId"]
+      # Store original image to GCS
       time = Time.parse(m.message.publish_time)
       obj_name = time.strftime("original/#{device}/%Y-%m-%d/%H/%M%S.jpg")
       gcs.insert_object(bucket, obj_name, StringIO.new(m.message.data))
@@ -257,10 +259,10 @@ def main(config)
       b64_image = Base64.strict_encode64(m.message.data)
       # Object Detection prediction
       pred = ML.predict(project, ml_model, [{"key" => "1", "image" => { "b64" => b64_image } }])
-      objs = pred[0]["detection_classes"].zip(pred[0]["detection_scores"]).select{|label, score| score > 0.2}.map{|label, score| [LABELS[label.to_i], score] }
+      objs = pred[0]["detection_classes"].zip(pred[0]["detection_scores"]).select{|label, score| score > threshold}.map{|label, score| [LABELS[label.to_i], score] }
       $stdout.puts(objs.inspect)
       url = labels_to_url(objs)
-      if data["dashboard_url"] != url and Time.parse(last_config.cloud_update_time) + 20 < Time.now
+      if data["dashboard_url"] != url and Time.parse(last_config.cloud_update_time) + 10 < Time.now
         $stdout.puts("URL change : #{url}")
         data["dashboard_url"] = url
         iot.modify_device_config(project, "us-central1", iot_registry, device, data.to_json)
@@ -268,9 +270,6 @@ def main(config)
       # create bounding box image
       bboxed_image = draw_bbox_image(b64_image, pred.first)
       gcs.insert_object(bucket, annotated_name, StringIO.new(bboxed_image), content_type: "image/jpeg")
-      #policy = gcs.get_object_iam_policy(bucket, annotated_name)
-      #policy.bindings << Google::Apis::StorageV1::Policy::Binding.new(members: "allUsers", role: "roles/storage.objectViewer")
-      #gcs.set_object_iam_policy(bucket, annotated_name, policy)
       gcs.copy_object(bucket, annotated_name, bucket, "annotated/#{device}/annotated.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
     end
     pubsub.ack(input_subscription, msgs)
@@ -290,6 +289,7 @@ if $0 == __FILE__
     config["bucket"] = ENV["SAVE_BUCKET"]
     config["ml_model"] = ENV["ML_MODEL"]
     config["iot_registry"] = ENV["IOT_REGISTRY"]
+    config["score_threshold"] = ENV["SCORE_THRESHOLD"]
   end
   $stdout.sync = true
   $stderr.sync = true

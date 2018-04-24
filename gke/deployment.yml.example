@@ -23,6 +23,8 @@ spec:
           value: model_name
         - name: IOT_REGISTRY
           value: registry_name
+        - name: SCORE_THRESHOLD
+          value: "0.2"
         resources:
           requests:
             cpu: "1m"
