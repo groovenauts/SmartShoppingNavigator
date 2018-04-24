@@ -21,6 +21,8 @@ spec:
           value: my-bucket
         - name: ML_MODEL
           value: model_name
+        - name: BUCKET_PREDICTION_MODEL
+          value: model_name
         - name: IOT_REGISTRY
           value: registry_name
         - name: SCORE_THRESHOLD

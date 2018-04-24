@@ -70,16 +70,30 @@ class CloudIot
 end
 
 class Datastore
-  def initialize
+  def initialize(project_id)
     @dataset = Google::Cloud::Datastore.new(project_id: project_id)
   end
 
-  def get_setting(project_id)
+  def get_setting
     query = Google::Cloud::Datastore::Query.new
     query.kind("Setting")
     query.limit(1)
     setting = @dataset.run(query).first
     setting&.properties&.to_hash or { "season" => "Spring", "period" => "Morning" }
+  end
+
+  def get_cart(device)
+    entities = @dataset.lookup(Google::Cloud::Datastore::Key.new("Cart", device))
+    e = entities.first
+    return [[]] if e.nil?
+    JSON.parse(e.properties["history"] || "[[]]")
+  end
+
+  def put_cart(device, history)
+    entity = Google::Cloud::Datastore::Entity.new
+    entity.key = Google::Cloud::Datastore::Key.new("Cart", device)
+    entity["history"] = JSON.generate(history)
+    @dataset.save(entity)
   end
 end
 
@@ -92,6 +106,7 @@ module ML
     uri = URI("https://ml.googleapis.com/v1/projects/#{project}/models/#{model}:predict")
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
+    http.read_timeout = 600
     req = Net::HTTP::Post.new(uri.request_uri)
     req["content-type"] = "application/json"
     req["Authorization"] = "Bearer #{access_token}"
@@ -108,104 +123,54 @@ module ML
       return nil
     end
     jobj["predictions"]
+  rescue Net::ReadTimeout
+    $stdout.puts "ML Engine online prediction connection timoout. retry"
+    retry
   end
 end
 
 LABELS = {
-  1 => "person",
-  2 => "bicycle",
-  3 => "car",
-  4 => "motorcycle",
-  5 => "airplane",
-  6 => "bus",
-  7 => "train",
-  8 => "truck",
-  9 => "boat",
-  10 => "traffic light",
-  11 => "fire hydrant",
-  13 => "stop sign",
-  14 => "parking meter",
-  15 => "bench",
-  16 => "bird",
-  17 => "cat",
-  18 => "dog",
-  19 => "horse",
-  20 => "sheep",
-  21 => "cow",
-  22 => "elephant",
-  23 => "bear",
-  24 => "zebra",
-  25 => "giraffe",
-  27 => "backpack",
-  28 => "umbrella",
-  31 => "handbag",
-  32 => "tie",
-  33 => "suitcase",
-  34 => "frisbee",
-  35 => "skis",
-  36 => "snowboard",
-  37 => "sports ball",
-  38 => "kite",
-  39 => "baseball bat",
-  40 => "baseball glove",
-  41 => "skateboard",
-  42 => "surfboard",
-  43 => "tennis racket",
-  44 => "bottle",
-  46 => "wine glass",
-  47 => "cup",
-  48 => "fork",
-  49 => "knife",
-  50 => "spoon",
-  51 => "bowl",
-  52 => "banana",
-  53 => "apple",
-  54 => "sandwich",
-  55 => "orange",
-  56 => "broccoli",
-  57 => "carrot",
-  58 => "hot dog",
-  59 => "pizza",
-  60 => "donut",
-  61 => "cake",
-  62 => "chair",
-  63 => "couch",
-  64 => "potted plant",
-  65 => "bed",
-  67 => "dining table",
-  70 => "toilet",
-  72 => "tv",
-  73 => "laptop",
-  74 => "mouse",
-  75 => "remote",
-  76 => "keyboard",
-  77 => "cell phone",
-  78 => "microwave",
-  79 => "oven",
-  80 => "toaster",
-  81 => "sink",
-  82 => "refrigerator",
-  84 => "book",
-  85 => "clock",
-  86 => "vase",
-  87 => "scissors",
-  88 => "teddy bear",
-  89 => "hair drier",
-  90 => "toothbrush",
+  1 => "onion",
+  2 => "tomato",
+  3 => "potato",
+  4 => "papprika",
+  5 => "eggplant",
+  6 => "beef",
+  7 => "pork",
+  8 => "chicken",
+  9 => "banana",
+  10 => "corn",
 }
 
 def label_to_name(label_id)
   LABELS[label_id.to_i]
 end
 
-def labels_to_url(detections)
-  if detections.find{|label, score| label == "apple" }
-    "https://storage.googleapis.com/gcp-iost-contents/apple-pie.jpg"
-  elsif detections.find{|label, score| label == "banana" }
-    "https://storage.googleapis.com/gcp-iost-contents/banana-cereal.jpg"
+def name_to_label(name)
+  LABELS.find{|i, n| n == name }[0]
+end
+
+def cart_to_url(objs)
+  basename = case
+  when (%w{ onion tomato beef } & objs).size == 3
+    "beef-cheese-circle-262977.jpg"
+  when (%w{ onion tomato } & objs).size == 2
+    "appetizer-bowl-chess-724664.jpg"
+  when (%w{ onion potate } & objs).size == 2
+    "food-onion-rings-plate-263049"
   else
-    "https://storage.googleapis.com/gcp-iost-contents/pizza2.jpg"
+    "mart.jpg"
   end
+  "https://storage.googleapis.com/gcp-iost-contents/#{basename}"
+end
+
+def stuff_to_url(stuff)
+  if stuff and name_to_label(stuff)
+    basename = "recommend/#{stuff}.jpg"
+  else
+    basename = "mart.jpg"
+  end
+  "https://storage.googleapis.com/gcp-iost-contents/#{basename}"
 end
 
 def draw_bbox_image(b64_image, predictions, threshold=0.3)
@@ -224,7 +189,7 @@ def draw_bbox_image(b64_image, predictions, threshold=0.3)
   rec = predictions
   rec["detection_scores"].each_with_index do |score, idx|
     break if score < threshold
-    label = label_to_name(rec["detection_classes"][idx])
+    label = label_to_name(rec["detection_classes"][idx]) || "none"
     xmin = (rec["detection_box_xmin"][idx] * width).to_i
     ymin = (rec["detection_box_ymin"][idx] * height).to_i
     xmax = (rec["detection_box_xmax"][idx] * width).to_i
@@ -238,6 +203,30 @@ def draw_bbox_image(b64_image, predictions, threshold=0.3)
   bbox = mask.composite(nega, 0, 0, Magick::SrcInCompositeOp)
   result = original.composite(bbox, 0, 0, Magick::OverCompositeOp)
   result.to_blob
+end
+
+def encode_cart_history_to_vector(history)
+  until history.size >= 4
+    history.unshift([])
+  end
+  history = history[-4, 4]
+  history.map{|stuffs| LABELS.map{|_, name| stuffs.include?(name) ? 1 : 0 } }
+end
+
+def predict_next(project, device, model, history, setting)
+  pred = ML.predict(project, model, [{"key" => "1", "cart_history" => encode_cart_history_to_vector(history), "season" => setting["season"], "period" => setting["period"] }])
+$stdout.puts(pred.inspect)
+  scores = pred[0]["score"]
+  if setting["recommend"]
+    idx = name_to_label(setting["recommend"]["label"])
+    scores[idx] += setting["recommend"]["amount"] || 0.2
+  end
+  idx = scores.index(scores.max)
+  if idx == 0
+    "end"
+  else
+    LABELS[idx]
+  end
 end
 
 def main(config)
@@ -256,6 +245,7 @@ def main(config)
   pubsub = Pubsub.new
   gcs = GCS.new
   iot = CloudIot.new
+  datastore = Datastore.new(project)
 
   loop do
     msgs = pubsub.pull(input_subscription)
@@ -273,15 +263,45 @@ def main(config)
       data = JSON.parse(last_config.binary_data)
       b64_image = Base64.strict_encode64(m.message.data)
       # Object Detection prediction
+      $stdout.puts("start object detection")
       pred = ML.predict(project, ml_model, [{"key" => "1", "image" => { "b64" => b64_image } }])
+      $stdout.puts("finished object detection")
       objs = pred[0]["detection_classes"].zip(pred[0]["detection_scores"]).select{|label, score| score > threshold}.map{|label, score| [LABELS[label.to_i], score] }
       $stdout.puts(objs.inspect)
-      url = labels_to_url(objs)
-      if data["dashboard_url"] != url and Time.parse(last_config.cloud_update_time) + 10 < Time.now
-        $stdout.puts("URL change : #{url}")
-        data["dashboard_url"] = url
-        iot.modify_device_config(project, "us-central1", iot_registry, device, data.to_json)
+      objs = objs.map{|o| o[0] }.compact.uniq.sort
+
+      history = datastore.get_cart(device)
+      if history.last != objs
+        $stdout.puts("cart contents changed. #{history.inspect} -> #{objs}")
+        if objs.empty?
+          # reset cart
+          $stdout.puts("reset cart")
+          datastore.put_cart(device, [[]])
+          url = stuff_to_url(nil)
+        else
+          # new stuff
+          history << objs
+          $stdout.puts("store new cart status")
+          datastore.put_cart(device, history)
+          $stdout.puts("start predict next stuff")
+          next_stuff = predict_next(project, device, config["bucket_prediction_model"], history, datastore.get_setting)
+          $stdout.puts("finish predict next stuff")
+          $stdout.puts("predicted next stuff = #{next_stuff}")
+          if next_stuff == "end"
+            url = cart_to_url(objs)
+          else
+            url = stuff_to_url(next_stuff)
+          end
+        end
+        if data["dashboard_url"] != url
+          $stdout.puts("URL change to #{url}")
+          data["dashboard_url"] = url
+          iot.modify_device_config(project, "us-central1", iot_registry, device, data.to_json)
+        end
+      else
+        $stdout.puts "Cart status not changed"
       end
+
       # create bounding box image
       bboxed_image = draw_bbox_image(b64_image, pred.first)
       gcs.insert_object(bucket, annotated_name, StringIO.new(bboxed_image), content_type: "image/jpeg")
@@ -303,6 +323,7 @@ if $0 == __FILE__
     config["input_subscription"] = "projects/#{config["project"]}/subscriptions/#{ENV["INPUT_SUBSCRIPTION"]}"
     config["bucket"] = ENV["SAVE_BUCKET"]
     config["ml_model"] = ENV["ML_MODEL"]
+    config["bucket_prediction_model"] = ENV["BUCKET_PREDICTION_MODEL"]
     config["iot_registry"] = ENV["IOT_REGISTRY"]
     config["score_threshold"] = ENV["SCORE_THRESHOLD"]
   end
