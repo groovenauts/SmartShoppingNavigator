@@ -6,6 +6,7 @@ require "rmagick"
 require "google/apis/pubsub_v1"
 require "google/apis/storage_v1"
 require "google/apis/cloudiot_v1"
+require "google/cloud/datastore"
 
 class Pubsub
   def initialize
@@ -65,6 +66,20 @@ class CloudIot
   def modify_device_config(project, location, registry, device, str)
     @api.modify_cloud_to_device_config("projects/#{project}/locations/#{location}/registries/#{registry}/devices/#{device}",
                                        Google::Apis::CloudiotV1::ModifyCloudToDeviceConfigRequest.new(binary_data: str))
+  end
+end
+
+class Datastore
+  def initialize
+    @dataset = Google::Cloud::Datastore.new(project_id: project_id)
+  end
+
+  def get_setting(project_id)
+    query = Google::Cloud::Datastore::Query.new
+    query.kind("Setting")
+    query.limit(1)
+    setting = @dataset.run(query).first
+    setting&.properties&.to_hash or { "season" => "Spring", "period" => "Morning" }
   end
 end
 

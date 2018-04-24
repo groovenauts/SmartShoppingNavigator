@@ -9,6 +9,7 @@ group :development, :test do
 end
 
 gem "google-api-client"
+gem "google-cloud-datastore"
 gem "kura"
 gem "rmagick"
 
