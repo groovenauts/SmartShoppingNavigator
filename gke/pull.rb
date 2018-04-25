@@ -255,9 +255,10 @@ def main(config)
       device = m.message.attributes["deviceId"]
       # Store original image to GCS
       time = Time.parse(m.message.publish_time)
-      obj_name = time.strftime("original/#{device}/%Y-%m-%d/%H/%M%S.jpg")
+      obj_name = time.strftime("original/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
       gcs.insert_object(bucket, obj_name, StringIO.new(m.message.data))
-      annotated_name = time.strftime("annotated/#{device}/%Y-%m-%d/%H/%M%S.jpg")
+      gcs.copy_object(bucket, obj_name, bucket, "original/#{device}/original.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
+      annotated_name = time.strftime("annotated/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
       # Load Device config
       last_config = iot.list_device_configs(project, "us-central1", iot_registry, device).first
       data = JSON.parse(last_config.binary_data)
