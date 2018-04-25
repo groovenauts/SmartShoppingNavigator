@@ -268,7 +268,7 @@ def main(config)
       pred = ML.predict(project, ml_model, [{"key" => "1", "image" => { "b64" => b64_image } }])
       $stdout.puts("finished object detection")
       objs = pred[0]["detection_classes"].zip(pred[0]["detection_scores"]).select{|label, score| score > threshold}.map{|label, score| [LABELS[label.to_i], score] }
-      $stdout.puts(objs.inspect)
+      $stdout.puts("detected stuffs: #{objs.inspect}")
       objs = objs.map{|o| o[0] }.compact.uniq.sort
 
       history = datastore.get_cart(device)
