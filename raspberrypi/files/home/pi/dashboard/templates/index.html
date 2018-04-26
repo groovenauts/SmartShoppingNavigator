@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" style="overflow:hidden;">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,7 +8,9 @@
   </head>
   <body>
     <script src="/static/js/jquery.min.js"></script>
-    <iframe id="mainframe" width=800 height=480 src="{{url}}"></iframe>
+    <div style='width: 800px; height: 480px; overflow: hidden; position: absolute; top:0; left:0;'>
+      <iframe id="mainframe" width=800 height=480 src="{{url}}" scrolling="no" frameborder="0"></iframe>
+    </div>
     <script src="/static/js/auto_reload.js"></script>
   </body>
 </html>
