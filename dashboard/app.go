@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
@@ -24,6 +25,7 @@ type templateParams struct {
 func init() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/setting", settingHandler)
+	http.HandleFunc("/display", displayHandler)
 }
 
 func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
@@ -105,5 +107,20 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
+	return
+}
+
+func displayHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	params, e := url.ParseQuery(r.URL.RawQuery)
+        urls := []string{}
+	if e != nil {
+		log.Errorf(ctx, "Parse query failed: %v", e)
+	} else {
+		urls = params["contents"]
+	}
+
+	template := template.Must(template.ParseFiles("display.html"))
+	template.Execute(w, urls)
 	return
 }
