@@ -13,9 +13,14 @@ import (
 	"google.golang.org/appengine/log"
 )
 
+const DefaultSeason = "spring"
+const DefaultPeriod = "morning"
+const DefaultDeviceId = "picamera01"
+
 type Setting struct {
 	Season string `json:"season" datastore:"season"`
 	Period string `json:"period" datastore:"period"`
+        DefaultDeviceId string `json:"defaultDeviceId" datastore:"defaultDeviceId"`
 }
 
 type Device struct {
@@ -81,8 +86,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if setting != nil {
 		params.Setting = *setting
 	} else {
-		params.Setting.Season = "spring"
-		params.Setting.Period = "morning"
+		params.Setting.Season = DefaultSeason
+		params.Setting.Period = DefaultPeriod
+                params.Setting.DefaultDeviceId = DefaultDeviceId
 	}
 	indexTemplate.Execute(w, params)
 	return
@@ -101,8 +107,9 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 		// Generate initial setting
 		key = datastore.NewKey(ctx, "Setting", "master", 0, nil)
 		setting = new(Setting)
-		setting.Season = "spring"
-		setting.Period = "morning"
+		setting.Season = DefaultSeason
+		setting.Period = DefaultPeriod
+                setting.DefaultDeviceId = DefaultDeviceId
 		if _, e := datastore.Put(ctx, key, setting); e != nil {
 			log.Errorf(ctx, "Failed to put setting: %v", e)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -121,7 +128,16 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	setting = new(Setting)
 	setting.Season = r.FormValue("season")
+        if setting.Season == "" {
+          setting.Season = DefaultSeason
+        }
 	setting.Period = r.FormValue("period")
+        if setting.Period == "" {
+          setting.Period = DefaultPeriod
+        }
+        if setting.DefaultDeviceId == "" {
+          setting.DefaultDeviceId = DefaultDeviceId
+        }
 	if _, err := datastore.Put(ctx, key, setting); err != nil {
 		log.Errorf(ctx, "Failed to put setting : %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -151,7 +167,7 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	deviceId := r.FormValue("deivceId")
 	if deviceId == "" {
-		deviceId = "picamera01"
+		deviceId = DefaultDeviceId
 	}
 	_, device, e := getDevice(ctx, deviceId)
 	var stuffs []string
