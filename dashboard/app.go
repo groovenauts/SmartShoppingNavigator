@@ -20,7 +20,7 @@ const DefaultDeviceId = "picamera01"
 type Setting struct {
 	Season string `json:"season" datastore:"season"`
 	Period string `json:"period" datastore:"period"`
-        DefaultDeviceId string `json:"defaultDeviceId" datastore:"defaultDeviceId"`
+        DeviceId string `json:"deviceId" datastore:"deviceId"`
 }
 
 type Device struct {
@@ -32,6 +32,7 @@ type Device struct {
 
 type templateParams struct {
 	Setting Setting
+        DeviceId string
 }
 
 func init() {
@@ -88,7 +89,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		params.Setting.Season = DefaultSeason
 		params.Setting.Period = DefaultPeriod
-                params.Setting.DefaultDeviceId = DefaultDeviceId
+                params.Setting.deviceId = DefaultDeviceId
 	}
 	indexTemplate.Execute(w, params)
 	return
@@ -109,7 +110,7 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 		setting = new(Setting)
 		setting.Season = DefaultSeason
 		setting.Period = DefaultPeriod
-                setting.DefaultDeviceId = DefaultDeviceId
+                setting.deviceId = DefaultDeviceId
 		if _, e := datastore.Put(ctx, key, setting); e != nil {
 			log.Errorf(ctx, "Failed to put setting: %v", e)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -135,8 +136,8 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
         if setting.Period == "" {
           setting.Period = DefaultPeriod
         }
-        if setting.DefaultDeviceId == "" {
-          setting.DefaultDeviceId = DefaultDeviceId
+        if setting.DeviceId == "" {
+          setting.DeviceId = DefaultDeviceId
         }
 	if _, err := datastore.Put(ctx, key, setting); err != nil {
 		log.Errorf(ctx, "Failed to put setting : %v", err)
