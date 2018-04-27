@@ -95,6 +95,23 @@ class Datastore
     entity["history"] = JSON.generate(history)
     @dataset.save(entity)
   end
+
+  def get_device(device)
+    entities = @dataset.lookup(Google::Cloud::Datastore::Key.new("Device", device))
+    e = entities.first
+    return [{}] if e.nil?
+    e.properties.to_hash
+  end
+
+  def put_device(device, objs, recommends)
+    entity = Google::Cloud::Datastore::Entity.new
+    entity.key = Google::Cloud::Datastore::Key.new("Device", device)
+    entity["deviceId"] = device
+    entity["unixtime"] = Time.now.to_i
+    entity["objects"] = objs
+    entity["recommends"] = recommends
+    @dataset.save(entity)
+  end
 end
 
 module ML
@@ -150,27 +167,31 @@ def name_to_label(name)
   LABELS.find{|i, n| n == name }[0]
 end
 
-def cart_to_url(objs)
-  basename = case
+def objs_to_stuffs(objs)
+  stuffs = case
   when (%w{ onion tomato beef } & objs).size == 3
-    "beef-cheese-circle-262977.jpg"
+    ["beef-cheese-circle-262977", "beef-cheese-closeup-41320", "beef-bowl-cherry-tomatoes-209459"]
   when (%w{ onion tomato } & objs).size == 2
-    "appetizer-bowl-chess-724664.jpg"
+    ["appetizer-bowl-chess-724664", "cooking-cuisine-dinner-132263"]
   when (%w{ onion potate } & objs).size == 2
-    "food-onion-rings-plate-263049.jpg"
+    ["food-onion-rings-plate-263049", "bake-baked-basil-236798", "bowl-close-up-cuisine-360939"]
+  when (%w( banana corn ) & objs).size == 2
+    ["banana-cereal", "pizza2"]
   else
-    "mart.jpg"
+    ["supermarket"]
   end
-  "https://storage.googleapis.com/gcp-iost-contents/#{basename}"
 end
 
-def stuff_to_url(stuff)
-  if stuff and name_to_label(stuff)
-    basename = "recommend/#{stuff}.jpg"
+def recommend_to_stuffs(recommend)
+  if recommend and name_to_label(recommend)
+    ["recommend/#{recommend}.jpg"]
   else
-    basename = "mart.jpg"
+    ["supermarket.jpg"]
   end
-  "https://storage.googleapis.com/gcp-iost-contents/#{basename}"
+end
+
+def stuffs_to_url(base_url, stuffs)
+  base_url + "?" + URI.encode_www_form(stuffs.map{|u| ["contents", u] })
 end
 
 def draw_bbox_image(b64_image, predictions, threshold=0.3)
@@ -280,7 +301,9 @@ def main(config)
           # reset cart
           $stdout.puts("reset cart")
           datastore.put_cart(device, [[]])
-          url = stuff_to_url(nil)
+          stuffs = ["supermarket"]
+          datastore.put_device(device, objs, ["supermarket"])
+          url = config["display_base_url"]
         else
           # new stuff
           history << objs
@@ -291,10 +314,12 @@ def main(config)
           $stdout.puts("finish predict next stuff")
           $stdout.puts("predicted next stuff = #{next_stuff}")
           if next_stuff == "end"
-            url = cart_to_url(objs)
+            stuffs = objs_to_stuffs(objs)
           else
-            url = stuff_to_url(next_stuff)
+            stuffs = recommend_to_stuffs(next_stuff)
           end
+          datastore.put_device(device, objs, stuffs)
+          url = stuffs_to_url(config["display_base_url"], stuffs)
         end
         if data["dashboard_url"] != url
           $stdout.puts("URL change to #{url}")
@@ -320,6 +345,7 @@ if $0 == __FILE__
   if config
     config = YAML.load(File.read(config))
     config["input_subscription"] = "projects/#{config["project"]}/subscriptions/#{config["input_subscription"]}"
+    config["display_base_url"] ||= "https://gcp-iost.appspot.com/display"
   else
     config = {}
     config["project"] = ENV["PROJECT"]
@@ -329,6 +355,7 @@ if $0 == __FILE__
     config["bucket_prediction_model"] = ENV["BUCKET_PREDICTION_MODEL"]
     config["iot_registry"] = ENV["IOT_REGISTRY"]
     config["score_threshold"] = ENV["SCORE_THRESHOLD"]
+    config["display_base_url"] = ENV["DISPLAY_BASE_URL"] || "https://gcp-iost.appspot.com/display"
   end
   $stdout.sync = true
   $stderr.sync = true
