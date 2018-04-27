@@ -1,8 +1,10 @@
-const SRC_IMG_URL = "https://storage.googleapis.com/gcp-iost-images/annotated/picamera01/annotated.jpg";
-const SRC_IMG_INTERVAL = 100000;
+const INPUT_URL = "https://storage.googleapis.com/gcp-iost-images/annotated/picamera01/annotated.jpg";
+const INPUT_INTERVAL = 10000;
 
 setTimeout(function() {
-  $('#src_image').attr('src', SRC_IMG_URL);
+  $('#src_image').attr('src', INPUT_URL);
+}, INPUT_INTERVAL);
+
 }, SRC_IMG_INTERVAL);
 
 $(function() {
