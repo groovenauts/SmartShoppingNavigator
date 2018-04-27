@@ -89,7 +89,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		params.Setting.Season = DefaultSeason
 		params.Setting.Period = DefaultPeriod
-		params.Setting.deviceId = DefaultDeviceId
+		params.Setting.DeviceId = DefaultDeviceId
 	}
 	indexTemplate.Execute(w, params)
 	return
@@ -110,7 +110,7 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 		setting = new(Setting)
 		setting.Season = DefaultSeason
 		setting.Period = DefaultPeriod
-		setting.deviceId = DefaultDeviceId
+		setting.DeviceId = DefaultDeviceId
 		if _, e := datastore.Put(ctx, key, setting); e != nil {
 			log.Errorf(ctx, "Failed to put setting: %v", e)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -172,11 +172,12 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, device, e := getDevice(ctx, deviceId)
 	var stuffs []string
-	if e != nil {
+	if e == nil {
 		stuffs = device.Recommends
 	} else {
 		stuffs = []string{}
 	}
+	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, stuffs)
 	template := template.Must(template.ParseFiles("display.html"))
 	template.Execute(w, stuffs)
 	return
