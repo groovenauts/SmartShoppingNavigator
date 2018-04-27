@@ -14,14 +14,13 @@ setTimeout(function() {
   }).done(function(data, textStatus) {
     console.log(data);
     if (data) {
-      $('preview').contents().find('html').html(data);
       $('.content-footer').text(moment().format('YYYY-MM-DD HH:mm:ss'));
-    //   let doc = document.getElementById('preview').contentWindow.document;
-    //   if (doc) {
-    //     doc.open();
-    //     doc.write(data);
-    //     doc.close();
-    //   }
+      let doc = document.getElementById('preview').contentWindow.document;
+      if (doc) {
+        doc.open();
+        doc.write(data);
+        doc.close();
+      }
     }
   }).fail(function(jqXHR, textStatus, errorThrown) {
     console.log(new Date(), 'An error occurred.', textStatus);
