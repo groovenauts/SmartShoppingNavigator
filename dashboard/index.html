@@ -6,18 +6,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IoST Demo</title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!--link rel="stylesheet" type="text/css" href="static/css/bulma.min.css"-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.0/css/bulma.min.css">
   <link rel="stylesheet" type="text/css" href="static/css/style.css">
   <script src="static/js/jquery.min.js"></script>
+  <script src="static/js/main.js"></script>
+  <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
 </head>
 <body>
-
-<h1>IoST Demo</h1>
-
-<form action="/setting" method="post">
-  <div>Season: <input name="season" value="{{.Setting.Season}}" /></div>
-  <div>Period: <input name="period" value="{{.Setting.Period}}" /></div>
-  <input type="submit">
-</form>
-
+  <div id="app">
+    <form class="header-box" name="form" action="/setting" method="post">
+        <div class="control">
+          <div class="select is-small is-info is-rounded">
+            <select name="season">
+              <option value="spring">Spring</option>
+              <option value="summer">Summer</option>
+              <option value="fall">Fall</option>
+              <option value="winter">Winter</option>
+            </select>
+          </div>
+        </div>
+        <div class="control">
+            <div class="select is-small is-info is-rounded">
+              <select name="period">
+                <option value="morning">Morning</option>
+                <option value="nonn">Noon</option>
+                <option value="evening">Evening</option>
+              </select>
+            </div>
+          </div>
+        </div>
+    </form>
+    <div class="wrapper">
+      <div class="container left">
+        <div class="content">
+          <span class="content-header">
+            <i class="material-icons green" title="raspberry pi">developer_board</i>
+            <i class="material-icons light-grey">add</i>
+            <i class="material-icons camera" title="camera">linked_camera</i>
+          </span>
+          <img id="src_image" src="https://cdn.amanaimages.com/cen3tzG4fTr7Gtw1PoeRer/25330011635.jpg" />
+        </div>
+      </div>
+      <div class="center">
+        <div class="triangle light-grey">
+        </div>
+      </div>
+      <div class="container right">
+        <div class="content">
+          <div class="content-header">
+            <img src="./static/img/gke.png" title="Google Kubernetes Engine"/>
+            <i class="material-icons light-grey">add</i>
+            <img src="./static/img/ml.png" title="Cloud Machine Learning Engine"/>
+          </div>
+          <img src="https://tblg.k-img.com/restaurant/images/Rvw/41754/640x640_rect_41754249.jpg" />
+        </div>
+      </div>
+    </div>
+    <div class="footer-logo">
+      <img src="./static/img//logo_groovenauts_2018_type1.png"/>
+    </div>
+  </div>
 </body>
 </html>
