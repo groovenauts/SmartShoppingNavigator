@@ -40,7 +40,8 @@ left:0;
     <div class="swiper-wrapper">
       {{range .}}
       <div class="swiper-slide">
-        <img src="{{.}}">
+        <iframe src="/slide?stuff={{.}}" width=800 height=480 scrolling="no" frameborder="0">
+        </iframe>
       </div>
       {{end}}
     </div>

@@ -18,6 +18,13 @@ type Setting struct {
 	Period string `json:"period" datastore:"period"`
 }
 
+type Device struct {
+	DeviceId   string   `json:"deviceId" datastore:"deviceId"`
+	Unixtime   int64    `json:"unixtime" datastore:"unixtime"`
+	Objects    []string `json:"objects" datastore:"objects"`
+	Recommends []string `json:"recommends" datastore:"recommends"`
+}
+
 type templateParams struct {
 	Setting Setting
 }
@@ -26,6 +33,8 @@ func init() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/setting", settingHandler)
 	http.HandleFunc("/display", displayHandler)
+	http.HandleFunc("/displayByDevice", displayByDeviceHandler)
+	http.HandleFunc("/slide", slideHandler)
 }
 
 func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
@@ -39,6 +48,19 @@ func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
 		return nil, nil, e
 	}
 	return key, setting, nil
+}
+
+func getDevice(ctx context.Context, deviceId string) (*datastore.Key, *Device, error) {
+	key := datastore.NewKey(ctx, "Device", deviceId, 0, nil)
+	device := new(Device)
+	e := datastore.Get(ctx, key, device)
+	if e != nil {
+		if e.Error() == "datastore: no such entity" {
+			e = nil
+		}
+		return nil, nil, e
+	}
+	return key, device, nil
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -113,14 +135,39 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 func displayHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	params, e := url.ParseQuery(r.URL.RawQuery)
-        urls := []string{}
+	stuffs := []string{}
 	if e != nil {
 		log.Errorf(ctx, "Parse query failed: %v", e)
 	} else {
-		urls = params["contents"]
+		stuffs = params["contents"]
 	}
 
 	template := template.Must(template.ParseFiles("display.html"))
-	template.Execute(w, urls)
+	template.Execute(w, stuffs)
+	return
+}
+
+func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	deviceId := r.FormValue("deivceId")
+	if deviceId == "" {
+		deviceId = "picamera01"
+	}
+	_, device, e := getDevice(ctx, deviceId)
+	var stuffs []string
+	if e != nil {
+		stuffs = device.Recommends
+	} else {
+		stuffs = []string{}
+	}
+	template := template.Must(template.ParseFiles("display.html"))
+	template.Execute(w, stuffs)
+	return
+}
+
+func slideHandler(w http.ResponseWriter, r *http.Request) {
+	stuff := r.FormValue("stuff")
+	template := template.Must(template.ParseFiles("slide.html"))
+	template.Execute(w, stuff)
 	return
 }
