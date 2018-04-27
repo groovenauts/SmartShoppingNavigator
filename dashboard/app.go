@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"time"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
@@ -31,7 +32,13 @@ type Device struct {
 }
 
 type indexTemplateParams struct {
-	Setting  Setting
+	Setting Setting
+}
+
+type displayTemplateParams struct {
+	Stuffs    []string
+	AutoSwipe bool
+	Timestamp string
 }
 
 func init() {
@@ -150,16 +157,21 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 
 func displayHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
-	params, e := url.ParseQuery(r.URL.RawQuery)
+	query, e := url.ParseQuery(r.URL.RawQuery)
 	stuffs := []string{}
 	if e != nil {
 		log.Errorf(ctx, "Parse query failed: %v", e)
 	} else {
-		stuffs = params["contents"]
+		stuffs = query["contents"]
+	}
+	params := displayTemplateParams{
+		Stuffs:    stuffs,
+		AutoSwipe: true,
+		Timestamp: "",
 	}
 
 	template := template.Must(template.ParseFiles("display.html"))
-	template.Execute(w, stuffs)
+	template.Execute(w, params)
 	return
 }
 
@@ -177,8 +189,13 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		stuffs = []string{}
 	}
 	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, stuffs)
+	params := displayTemplateParams{
+		Stuffs:    stuffs,
+		AutoSwipe: false,
+		Timestamp: time.Unix(device.Unixtime, 0).Format("2006-01-02 15:04:05"),
+	}
 	template := template.Must(template.ParseFiles("display.html"))
-	template.Execute(w, stuffs)
+	template.Execute(w, params)
 	return
 }
 
