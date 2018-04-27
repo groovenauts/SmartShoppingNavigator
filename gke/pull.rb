@@ -157,7 +157,7 @@ def cart_to_url(objs)
   when (%w{ onion tomato } & objs).size == 2
     "appetizer-bowl-chess-724664.jpg"
   when (%w{ onion potate } & objs).size == 2
-    "food-onion-rings-plate-263049"
+    "food-onion-rings-plate-263049.jpg"
   else
     "mart.jpg"
   end
@@ -181,6 +181,7 @@ def draw_bbox_image(b64_image, predictions, threshold=0.3)
   mask = Magick::Image.new(width, height) { self.background_color = "none" }
   gc = Magick::Draw.new
   gc.stroke_color("white")
+  gc.fill_color("white")
   gc.fill_opacity(0)
   gc.stroke_width(1)
   gc.text_align(Magick::LeftAlign)
@@ -201,6 +202,7 @@ def draw_bbox_image(b64_image, predictions, threshold=0.3)
   end
   gc.draw(mask)
   bbox = mask.composite(nega, 0, 0, Magick::SrcInCompositeOp)
+  bbox = mask
   result = original.composite(bbox, 0, 0, Magick::OverCompositeOp)
   result.to_blob
 end
