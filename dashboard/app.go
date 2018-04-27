@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"time"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
@@ -30,9 +31,15 @@ type Device struct {
 	Recommends []string `json:"recommends" datastore:"recommends"`
 }
 
-type templateParams struct {
-	Setting  Setting
-	DeviceId string
+type indexTemplateParams struct {
+	Setting Setting
+}
+
+type displayTemplateParams struct {
+	Stuffs    []string
+	AutoSwipe bool
+	Timestamp string
+	Loop      bool
 }
 
 func init() {
@@ -76,7 +83,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := appengine.NewContext(r)
 	indexTemplate := template.Must(template.ParseFiles("index.html"))
-	params := templateParams{}
+	params := indexTemplateParams{}
 	_, setting, e := getSetting(ctx)
 	if e != nil {
 		log.Errorf(ctx, "Failed to get setting: %v", e)
@@ -151,16 +158,22 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 
 func displayHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
-	params, e := url.ParseQuery(r.URL.RawQuery)
+	query, e := url.ParseQuery(r.URL.RawQuery)
 	stuffs := []string{}
 	if e != nil {
 		log.Errorf(ctx, "Parse query failed: %v", e)
 	} else {
-		stuffs = params["contents"]
+		stuffs = query["contents"]
+	}
+	params := displayTemplateParams{
+		Stuffs:    stuffs,
+		AutoSwipe: true,
+		Timestamp: "",
+		Loop:      len(stuffs) > 1,
 	}
 
 	template := template.Must(template.ParseFiles("display.html"))
-	template.Execute(w, stuffs)
+	template.Execute(w, params)
 	return
 }
 
@@ -172,14 +185,22 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, device, e := getDevice(ctx, deviceId)
 	var stuffs []string
-	if e == nil {
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	if e == nil && device != nil && device.Recommends != nil {
 		stuffs = device.Recommends
+		timestamp = time.Unix(device.Unixtime, 0).Format("2006-01-02 15:04:05")
 	} else {
-		stuffs = []string{}
+		stuffs = []string{"supermarket"}
 	}
 	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, stuffs)
+	params := displayTemplateParams{
+		Stuffs:    stuffs,
+		AutoSwipe: false,
+		Timestamp: timestamp,
+		Loop:      len(stuffs) > 1,
+	}
 	template := template.Must(template.ParseFiles("display.html"))
-	template.Execute(w, stuffs)
+	template.Execute(w, params)
 	return
 }
 
