@@ -39,6 +39,7 @@ type displayTemplateParams struct {
 	Stuffs    []string
 	AutoSwipe bool
 	Timestamp string
+	Loop      bool
 }
 
 func init() {
@@ -168,6 +169,7 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 		Stuffs:    stuffs,
 		AutoSwipe: true,
 		Timestamp: "",
+		Loop:      len(stuffs) > 1,
 	}
 
 	template := template.Must(template.ParseFiles("display.html"))
@@ -183,16 +185,19 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, device, e := getDevice(ctx, deviceId)
 	var stuffs []string
-	if e == nil {
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	if e == nil && device != nil && device.Recommends != nil {
 		stuffs = device.Recommends
+		timestamp = time.Unix(device.Unixtime, 0).Format("2006-01-02 15:04:05")
 	} else {
-		stuffs = []string{}
+		stuffs = []string{"supermarket"}
 	}
 	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, stuffs)
 	params := displayTemplateParams{
 		Stuffs:    stuffs,
 		AutoSwipe: false,
-		Timestamp: time.Unix(device.Unixtime, 0).Format("2006-01-02 15:04:05"),
+		Timestamp: timestamp,
+		Loop:      len(stuffs) > 1,
 	}
 	template := template.Must(template.ParseFiles("display.html"))
 	template.Execute(w, params)

@@ -64,7 +64,11 @@ left:0;
         nextEl: '.swiper-button-next',
         prevEl: '.swiper-button-prev',
       },
+      {{if .Loop}}
       loop: true,
+      {{else}}
+      loop: false,
+      {{end}}
     });
   </script>
 </body>
