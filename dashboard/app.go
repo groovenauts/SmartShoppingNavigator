@@ -13,19 +13,34 @@ import (
 	"google.golang.org/appengine/log"
 )
 
+const DefaultSeason = "spring"
+const DefaultPeriod = "morning"
+const DefaultDeviceId = "picamera01"
+
 type Setting struct {
-	Season string `json:"season" datastore:"season"`
-	Period string `json:"period" datastore:"period"`
+	Season   string `json:"season" datastore:"season"`
+	Period   string `json:"period" datastore:"period"`
+	DeviceId string `json:"deviceId" datastore:"deviceId"`
+}
+
+type Device struct {
+	DeviceId   string   `json:"deviceId" datastore:"deviceId"`
+	Unixtime   int64    `json:"unixtime" datastore:"unixtime"`
+	Objects    []string `json:"objects" datastore:"objects"`
+	Recommends []string `json:"recommends" datastore:"recommends"`
 }
 
 type templateParams struct {
-	Setting Setting
+	Setting  Setting
+	DeviceId string
 }
 
 func init() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/setting", settingHandler)
 	http.HandleFunc("/display", displayHandler)
+	http.HandleFunc("/displayByDevice", displayByDeviceHandler)
+	http.HandleFunc("/slide", slideHandler)
 }
 
 func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
@@ -39,6 +54,19 @@ func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
 		return nil, nil, e
 	}
 	return key, setting, nil
+}
+
+func getDevice(ctx context.Context, deviceId string) (*datastore.Key, *Device, error) {
+	key := datastore.NewKey(ctx, "Device", deviceId, 0, nil)
+	device := new(Device)
+	e := datastore.Get(ctx, key, device)
+	if e != nil {
+		if e.Error() == "datastore: no such entity" {
+			e = nil
+		}
+		return nil, nil, e
+	}
+	return key, device, nil
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,8 +87,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if setting != nil {
 		params.Setting = *setting
 	} else {
-		params.Setting.Season = "spring"
-		params.Setting.Period = "morning"
+		params.Setting.Season = DefaultSeason
+		params.Setting.Period = DefaultPeriod
+		params.Setting.deviceId = DefaultDeviceId
 	}
 	indexTemplate.Execute(w, params)
 	return
@@ -79,8 +108,9 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 		// Generate initial setting
 		key = datastore.NewKey(ctx, "Setting", "master", 0, nil)
 		setting = new(Setting)
-		setting.Season = "spring"
-		setting.Period = "morning"
+		setting.Season = DefaultSeason
+		setting.Period = DefaultPeriod
+		setting.deviceId = DefaultDeviceId
 		if _, e := datastore.Put(ctx, key, setting); e != nil {
 			log.Errorf(ctx, "Failed to put setting: %v", e)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -99,7 +129,16 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	setting = new(Setting)
 	setting.Season = r.FormValue("season")
+	if setting.Season == "" {
+		setting.Season = DefaultSeason
+	}
 	setting.Period = r.FormValue("period")
+	if setting.Period == "" {
+		setting.Period = DefaultPeriod
+	}
+	if setting.DeviceId == "" {
+		setting.DeviceId = DefaultDeviceId
+	}
 	if _, err := datastore.Put(ctx, key, setting); err != nil {
 		log.Errorf(ctx, "Failed to put setting : %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -113,14 +152,39 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 func displayHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	params, e := url.ParseQuery(r.URL.RawQuery)
-        urls := []string{}
+	stuffs := []string{}
 	if e != nil {
 		log.Errorf(ctx, "Parse query failed: %v", e)
 	} else {
-		urls = params["contents"]
+		stuffs = params["contents"]
 	}
 
 	template := template.Must(template.ParseFiles("display.html"))
-	template.Execute(w, urls)
+	template.Execute(w, stuffs)
+	return
+}
+
+func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	deviceId := r.FormValue("deivceId")
+	if deviceId == "" {
+		deviceId = DefaultDeviceId
+	}
+	_, device, e := getDevice(ctx, deviceId)
+	var stuffs []string
+	if e != nil {
+		stuffs = device.Recommends
+	} else {
+		stuffs = []string{}
+	}
+	template := template.Must(template.ParseFiles("display.html"))
+	template.Execute(w, stuffs)
+	return
+}
+
+func slideHandler(w http.ResponseWriter, r *http.Request) {
+	stuff := r.FormValue("stuff")
+	template := template.Must(template.ParseFiles("slide.html"))
+	template.Execute(w, stuff)
 	return
 }

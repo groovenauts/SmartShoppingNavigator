@@ -95,6 +95,23 @@ class Datastore
     entity["history"] = JSON.generate(history)
     @dataset.save(entity)
   end
+
+  def get_device(device)
+    entities = @dataset.lookup(Google::Cloud::Datastore::Key.new("Device", device))
+    e = entities.first
+    return [{}] if e.nil?
+    e.properties.to_hash
+  end
+
+  def put_device(device, objs, recommends)
+    entity = Google::Cloud::Datastore::Entity.new
+    entity.key = Google::Cloud::Datastore::Key.new("Device", device)
+    entity["deviceId"] = device
+    entity["unixtime"] = Time.now.to_i
+    entity["objects"] = objs
+    entity["recommends"] = recommends
+    @dataset.save(entity)
+  end
 end
 
 module ML
@@ -150,30 +167,34 @@ def name_to_label(name)
   LABELS.find{|i, n| n == name }[0]
 end
 
-def cart_to_url(objs)
-  basename = case
+def objs_to_stuffs(objs)
+  stuffs = case
   when (%w{ onion tomato beef } & objs).size == 3
-    "beef-cheese-circle-262977.jpg"
+    ["beef-cheese-circle-262977", "beef-cheese-closeup-41320", "beef-bowl-cherry-tomatoes-209459"]
   when (%w{ onion tomato } & objs).size == 2
-    "appetizer-bowl-chess-724664.jpg"
+    ["appetizer-bowl-chess-724664", "cooking-cuisine-dinner-132263"]
   when (%w{ onion potate } & objs).size == 2
-    "food-onion-rings-plate-263049"
+    ["food-onion-rings-plate-263049", "bake-baked-basil-236798", "bowl-close-up-cuisine-360939"]
+  when (%w( banana corn ) & objs).size == 2
+    ["banana-cereal", "pizza2"]
   else
-    "mart.jpg"
+    ["supermarket"]
   end
-  "https://storage.googleapis.com/gcp-iost-contents/#{basename}"
 end
 
-def stuff_to_url(stuff)
-  if stuff and name_to_label(stuff)
-    basename = "recommend/#{stuff}.jpg"
+def recommend_to_stuffs(recommend)
+  if recommend and name_to_label(recommend)
+    ["recommend/#{recommend}.jpg"]
   else
-    basename = "mart.jpg"
+    ["supermarket.jpg"]
   end
-  "https://storage.googleapis.com/gcp-iost-contents/#{basename}"
 end
 
-def draw_bbox_image(b64_image, predictions, threshold=0.3)
+def stuffs_to_url(base_url, stuffs)
+  base_url + "?" + URI.encode_www_form(stuffs.map{|u| ["contents", u] })
+end
+
+def draw_bbox_image(b64_image, predictions, time, threshold=0.5)
   original = Magick::Image.read_inline(b64_image)[0]
   width = original.columns
   height = original.rows
@@ -181,6 +202,7 @@ def draw_bbox_image(b64_image, predictions, threshold=0.3)
   mask = Magick::Image.new(width, height) { self.background_color = "none" }
   gc = Magick::Draw.new
   gc.stroke_color("white")
+  gc.fill_color("white")
   gc.fill_opacity(0)
   gc.stroke_width(1)
   gc.text_align(Magick::LeftAlign)
@@ -199,8 +221,14 @@ def draw_bbox_image(b64_image, predictions, threshold=0.3)
     gc.fill_opacity(1)
     gc.text(xmin+2, ymin+12, label)
   end
+  gc.annotate(mask, 0, 0, 5, 5, time.strftime("%Y-%m-%d %H:%M:%S")) do
+    self.fill = "white"
+    self.pointsize = 16
+    self.gravity = Magick::SouthEastGravity
+  end
   gc.draw(mask)
   bbox = mask.composite(nega, 0, 0, Magick::SrcInCompositeOp)
+  bbox = mask
   result = original.composite(bbox, 0, 0, Magick::OverCompositeOp)
   result.to_blob
 end
@@ -258,7 +286,6 @@ def main(config)
       obj_name = time.strftime("original/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
       gcs.insert_object(bucket, obj_name, StringIO.new(m.message.data))
       gcs.copy_object(bucket, obj_name, bucket, "original/#{device}/original.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
-      annotated_name = time.strftime("annotated/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
       # Load Device config
       last_config = iot.list_device_configs(project, "us-central1", iot_registry, device).first
       data = JSON.parse(last_config.binary_data)
@@ -271,6 +298,14 @@ def main(config)
       $stdout.puts("detected stuffs: #{objs.inspect}")
       objs = objs.map{|o| o[0] }.compact.uniq.sort
 
+      # create bounding box image
+      th = Thread.start(device, b64_image, pred.first, time) do |dev, img, p, t|
+        annotated = t.strftime("annotated/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
+        bboxed_image = draw_bbox_image(img, p, t, config["score_threshold"])
+        gcs.insert_object(bucket, annotated, StringIO.new(bboxed_image), content_type: "image/jpeg")
+        gcs.copy_object(bucket, annotated, bucket, "annotated/#{dev}/annotated.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
+      end
+
       history = datastore.get_cart(device)
       if history.last != objs
         $stdout.puts("cart contents changed. #{history.inspect} -> #{objs}")
@@ -278,7 +313,9 @@ def main(config)
           # reset cart
           $stdout.puts("reset cart")
           datastore.put_cart(device, [[]])
-          url = stuff_to_url(nil)
+          stuffs = ["supermarket"]
+          datastore.put_device(device, objs, ["supermarket"])
+          url = config["display_base_url"]
         else
           # new stuff
           history << objs
@@ -289,10 +326,12 @@ def main(config)
           $stdout.puts("finish predict next stuff")
           $stdout.puts("predicted next stuff = #{next_stuff}")
           if next_stuff == "end"
-            url = cart_to_url(objs)
+            stuffs = objs_to_stuffs(objs)
           else
-            url = stuff_to_url(next_stuff)
+            stuffs = recommend_to_stuffs(next_stuff)
           end
+          datastore.put_device(device, objs, stuffs)
+          url = stuffs_to_url(config["display_base_url"], stuffs)
         end
         if data["dashboard_url"] != url
           $stdout.puts("URL change to #{url}")
@@ -303,10 +342,7 @@ def main(config)
         $stdout.puts "Cart status not changed"
       end
 
-      # create bounding box image
-      bboxed_image = draw_bbox_image(b64_image, pred.first)
-      gcs.insert_object(bucket, annotated_name, StringIO.new(bboxed_image), content_type: "image/jpeg")
-      gcs.copy_object(bucket, annotated_name, bucket, "annotated/#{device}/annotated.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
+      th.join
     end
     pubsub.ack(input_subscription, msgs)
   end
@@ -318,6 +354,7 @@ if $0 == __FILE__
   if config
     config = YAML.load(File.read(config))
     config["input_subscription"] = "projects/#{config["project"]}/subscriptions/#{config["input_subscription"]}"
+    config["display_base_url"] ||= "https://gcp-iost.appspot.com/display"
   else
     config = {}
     config["project"] = ENV["PROJECT"]
@@ -326,7 +363,8 @@ if $0 == __FILE__
     config["ml_model"] = ENV["ML_MODEL"]
     config["bucket_prediction_model"] = ENV["BUCKET_PREDICTION_MODEL"]
     config["iot_registry"] = ENV["IOT_REGISTRY"]
-    config["score_threshold"] = ENV["SCORE_THRESHOLD"]
+    config["score_threshold"] = Float(ENV["SCORE_THRESHOLD"] || 0.5)
+    config["display_base_url"] = ENV["DISPLAY_BASE_URL"] || "https://gcp-iost.appspot.com/display"
   end
   $stdout.sync = true
   $stderr.sync = true
