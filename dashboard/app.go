@@ -30,9 +30,8 @@ type Device struct {
 	Recommends []string `json:"recommends" datastore:"recommends"`
 }
 
-type templateParams struct {
+type indexTemplateParams struct {
 	Setting  Setting
-	DeviceId string
 }
 
 func init() {
@@ -76,7 +75,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := appengine.NewContext(r)
 	indexTemplate := template.Must(template.ParseFiles("index.html"))
-	params := templateParams{}
+	params := indexTemplateParams{}
 	_, setting, e := getSetting(ctx)
 	if e != nil {
 		log.Errorf(ctx, "Failed to get setting: %v", e)
