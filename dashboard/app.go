@@ -18,9 +18,9 @@ const DefaultPeriod = "morning"
 const DefaultDeviceId = "picamera01"
 
 type Setting struct {
-	Season string `json:"season" datastore:"season"`
-	Period string `json:"period" datastore:"period"`
-        DeviceId string `json:"deviceId" datastore:"deviceId"`
+	Season   string `json:"season" datastore:"season"`
+	Period   string `json:"period" datastore:"period"`
+	DeviceId string `json:"deviceId" datastore:"deviceId"`
 }
 
 type Device struct {
@@ -31,8 +31,8 @@ type Device struct {
 }
 
 type templateParams struct {
-	Setting Setting
-        DeviceId string
+	Setting  Setting
+	DeviceId string
 }
 
 func init() {
@@ -89,7 +89,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		params.Setting.Season = DefaultSeason
 		params.Setting.Period = DefaultPeriod
-                params.Setting.deviceId = DefaultDeviceId
+		params.Setting.deviceId = DefaultDeviceId
 	}
 	indexTemplate.Execute(w, params)
 	return
@@ -110,7 +110,7 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 		setting = new(Setting)
 		setting.Season = DefaultSeason
 		setting.Period = DefaultPeriod
-                setting.deviceId = DefaultDeviceId
+		setting.deviceId = DefaultDeviceId
 		if _, e := datastore.Put(ctx, key, setting); e != nil {
 			log.Errorf(ctx, "Failed to put setting: %v", e)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -129,16 +129,16 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	setting = new(Setting)
 	setting.Season = r.FormValue("season")
-        if setting.Season == "" {
-          setting.Season = DefaultSeason
-        }
+	if setting.Season == "" {
+		setting.Season = DefaultSeason
+	}
 	setting.Period = r.FormValue("period")
-        if setting.Period == "" {
-          setting.Period = DefaultPeriod
-        }
-        if setting.DeviceId == "" {
-          setting.DeviceId = DefaultDeviceId
-        }
+	if setting.Period == "" {
+		setting.Period = DefaultPeriod
+	}
+	if setting.DeviceId == "" {
+		setting.DeviceId = DefaultDeviceId
+	}
 	if _, err := datastore.Put(ctx, key, setting); err != nil {
 		log.Errorf(ctx, "Failed to put setting : %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
