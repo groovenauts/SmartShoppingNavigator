@@ -14,6 +14,19 @@ body {
   left: 0px;
   right: 0px;
 }
+.iframe-content {
+  position: relative;
+  width: 100%;
+  padding: 30px;
+}
+.iframe-content iframe {
+   position: absolute;
+   top: 0;
+   left: 0;
+   bottom: 0;
+   right: 0;
+   margin: 0 auto;
+}
 .header-box {
   z-index: 1;
   position: absolute;
@@ -80,6 +93,11 @@ body {
   /* tweak icon size */
   font-size: 32px;
   margin-bottom: 2px;
+}
+.content-footer {
+  color: #9E9E9E;
+  font-size: 14px;
+  float: right;
 }
 .left {
   color: #757575;

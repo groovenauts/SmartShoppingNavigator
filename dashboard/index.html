@@ -12,6 +12,7 @@
   <script src="static/js/jquery.min.js"></script>
   <script src="static/js/main.js"></script>
   <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.min.js"></script>
 </head>
 <body>
   <div id="app">
@@ -45,7 +46,9 @@
             <i class="material-icons light-grey">add</i>
             <i class="material-icons camera" title="camera">linked_camera</i>
           </span>
-          <img id="src_image" src="https://cdn.amanaimages.com/cen3tzG4fTr7Gtw1PoeRer/25330011635.jpg" />
+          <div>
+            <img id="src_image" src="https://cdn.amanaimages.com/cen3tzG4fTr7Gtw1PoeRer/25330011635.jpg" />
+          </div>
         </div>
       </div>
       <div class="center">
@@ -59,12 +62,16 @@
             <i class="material-icons light-grey">add</i>
             <img src="./static/img/ml.png" title="Cloud Machine Learning Engine"/>
           </div>
-          <img src="https://tblg.k-img.com/restaurant/images/Rvw/41754/640x640_rect_41754249.jpg" />
+          <div id="preview" class="iframe-content">
+            <iframe src="http://www.youtube.com/embed/xTjejvnBJfU?rel=0" frameborder="0"></iframe>
+           </div>
+          <div class="content-footer">
+          </div>
         </div>
       </div>
     </div>
     <div class="footer-logo">
-      <img src="./static/img//logo_groovenauts_2018_type1.png"/>
+      <img src="./static/img/logo_groovenauts_2018_type1.png"/>
     </div>
   </div>
 </body>
