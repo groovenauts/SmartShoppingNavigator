@@ -194,7 +194,7 @@ def stuffs_to_url(base_url, stuffs)
   base_url + "?" + URI.encode_www_form(stuffs.map{|u| ["contents", u] })
 end
 
-def draw_bbox_image(b64_image, predictions, threshold=0.3)
+def draw_bbox_image(b64_image, predictions, time, threshold=0.5)
   original = Magick::Image.read_inline(b64_image)[0]
   width = original.columns
   height = original.rows
@@ -220,6 +220,11 @@ def draw_bbox_image(b64_image, predictions, threshold=0.3)
     gc.rectangle(xmin, ymin, xmax, ymax)
     gc.fill_opacity(1)
     gc.text(xmin+2, ymin+12, label)
+  end
+  gc.annotate(mask, 0, 0, 5, 5, time.strftime("%Y-%m-%d %H:%M:%S")) do
+    self.fill = "white"
+    self.pointsize = 16
+    self.gravity = Magick::SouthEastGravity
   end
   gc.draw(mask)
   bbox = mask.composite(nega, 0, 0, Magick::SrcInCompositeOp)
@@ -281,7 +286,6 @@ def main(config)
       obj_name = time.strftime("original/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
       gcs.insert_object(bucket, obj_name, StringIO.new(m.message.data))
       gcs.copy_object(bucket, obj_name, bucket, "original/#{device}/original.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
-      annotated_name = time.strftime("annotated/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
       # Load Device config
       last_config = iot.list_device_configs(project, "us-central1", iot_registry, device).first
       data = JSON.parse(last_config.binary_data)
@@ -293,6 +297,14 @@ def main(config)
       objs = pred[0]["detection_classes"].zip(pred[0]["detection_scores"]).select{|label, score| score > threshold}.map{|label, score| [LABELS[label.to_i], score] }
       $stdout.puts("detected stuffs: #{objs.inspect}")
       objs = objs.map{|o| o[0] }.compact.uniq.sort
+
+      # create bounding box image
+      th = Thread.start(device, b64_image, pred.first, time) do |dev, img, p, t|
+        annotated = t.strftime("annotated/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
+        bboxed_image = draw_bbox_image(img, p, t, config["score_threshold"])
+        gcs.insert_object(bucket, annotated, StringIO.new(bboxed_image), content_type: "image/jpeg")
+        gcs.copy_object(bucket, annotated, bucket, "annotated/#{dev}/annotated.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
+      end
 
       history = datastore.get_cart(device)
       if history.last != objs
@@ -330,10 +342,7 @@ def main(config)
         $stdout.puts "Cart status not changed"
       end
 
-      # create bounding box image
-      bboxed_image = draw_bbox_image(b64_image, pred.first)
-      gcs.insert_object(bucket, annotated_name, StringIO.new(bboxed_image), content_type: "image/jpeg")
-      gcs.copy_object(bucket, annotated_name, bucket, "annotated/#{device}/annotated.jpg", Google::Apis::StorageV1::Object.new(cache_control: "no-store", content_type: "image_jpeg"), "publicRead")
+      th.join
     end
     pubsub.ack(input_subscription, msgs)
   end
@@ -354,7 +363,7 @@ if $0 == __FILE__
     config["ml_model"] = ENV["ML_MODEL"]
     config["bucket_prediction_model"] = ENV["BUCKET_PREDICTION_MODEL"]
     config["iot_registry"] = ENV["IOT_REGISTRY"]
-    config["score_threshold"] = ENV["SCORE_THRESHOLD"]
+    config["score_threshold"] = Float(ENV["SCORE_THRESHOLD"] || 0.5)
     config["display_base_url"] = ENV["DISPLAY_BASE_URL"] || "https://gcp-iost.appspot.com/display"
   end
   $stdout.sync = true
