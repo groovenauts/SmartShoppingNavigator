@@ -46,7 +46,7 @@ $(function() {
 
 function updateSrcImg() {
   console.log(new Date(), 'Get input image');
-  src = "https://storage.googleapis.com/gcp-iost-images/annotated/" + $('#deviceId').val() + "/annotated.jpg"
+  var src = "https://storage.googleapis.com/gcp-iost-images/annotated/" + $('#deviceId').val() + "/annotated.jpg"
   $('#src_image').attr('src', src + '?' + new Date().getTime());
 }
 
