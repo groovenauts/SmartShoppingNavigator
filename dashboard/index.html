@@ -1,19 +1,77 @@
 <!doctype html>
 <html>
 <head>
+  <meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IoST Demo</title>
-  <link rel="stylesheet" type="text/css" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="static/css/bulma.min.css">
+  <link rel="stylesheet" type="text/css" href="static/css/style.css">
+  <script src="static/js/jquery.min.js"></script>
+  <script src="static/js/main.js"></script>
+  <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.min.js"></script>
 </head>
 <body>
-  <script src="/static/js/jquery.min.js"></script>
-
-<h1>IoST Demo</h1>
-
-<form action="/setting" method="post">
-  <div>Season: <input name="season" value="{{.Setting.Season}}" /></div>
-  <div>Period: <input name="period" value="{{.Setting.Period}}" /></div>
-  <input type="submit">
-</form>
-
+  <div id="app">
+    <form class="header-box" name="form" action="/setting" method="post">
+        <div class="control">
+          <div class="select is-small is-info is-rounded">
+            <select name="season">
+              <option value="spring">Spring</option>
+              <option value="summer">Summer</option>
+              <option value="fall">Fall</option>
+              <option value="winter">Winter</option>
+            </select>
+          </div>
+        </div>
+        <div class="control">
+            <div class="select is-small is-info is-rounded">
+              <select name="period">
+                <option value="morning">Morning</option>
+                <option value="nonn">Noon</option>
+                <option value="evening">Evening</option>
+              </select>
+            </div>
+          </div>
+        </div>
+    </form>
+    <div class="wrapper">
+      <div class="container left">
+        <div class="content">
+          <span class="content-header">
+            <i class="material-icons" title="raspberry pi">developer_board</i>
+            <i class="material-icons light-grey">add</i>
+            <i class="material-icons camera" title="camera">linked_camera</i>
+          </span>
+          <div>
+            <img id="src_image" src="https://storage.googleapis.com/gcp-iost-images/annotated/picamera01/annotated.jpg" />
+          </div>
+          <div class="content-footer">&nbsp;</div>
+          </div>
+      </div>
+      <div class="center">
+        <div class="triangle light-grey">
+        </div>
+      </div>
+      <div class="container right">
+        <div class="content">
+          <div class="content-header">
+            <img src="./static/img/gke.png" title="Google Kubernetes Engine"/>
+            <i class="material-icons light-grey">add</i>
+            <img src="./static/img/ml.png" title="Cloud Machine Learning Engine"/>
+          </div>
+          <div class="iframe-content">
+            <iframe id="preview" scrolling="no" frameborder="0"></iframe>
+           </div>
+          <div id="acquisition_date" class="content-footer"></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-logo">
+      <img src="./static/img/logo_groovenauts_2018_type1.png"/>
+    </div>
+  </div>
 </body>
 </html>

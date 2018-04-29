@@ -1,0 +1,72 @@
+const INPUT_UPDATE_INTERVAL = 10000;
+const OUTPUT_UPDATE_INTERVAL = 10000;
+
+setInterval(function() {
+  updateSrcImg();
+}, INPUT_UPDATE_INTERVAL);
+
+setInterval(function() {
+  updateResult();
+}, OUTPUT_UPDATE_INTERVAL);
+
+$(function() {
+  $('select').change(function(e) {
+    disableForm();
+    $.ajax({
+      url: '/setting',
+      type: 'POST',
+      data: $('form').serialize(),
+    }).done(function(data, textStatus) {
+      console.log(new Date(), 'Submission was successful.');
+    }).fail(function(xhr, textStatus, errorThrown) {
+      console.error(new Date(), 'An error occurred.', textStatus);
+    }).always(function() {
+      enableForm();
+    });
+    e.preventDefault();
+  });
+
+  // Adjust iframe fit to src image size
+  $('#src_image').on('load', function() {
+    $('#preview').css({
+      height: $(this).height()
+    });
+  });
+  updateResult();
+});
+
+function updateSrcImg() {
+  console.log(new Date(), 'Get input image');
+  const src = $('#src_image').attr('src');
+  $('#src_image').attr('src', src + '?' + new Date().getTime());
+}
+
+function updateResult() {
+  console.log(new Date(), 'Get result image');
+  $.ajax({
+    url: '/displayByDevice',
+    data: {deivceId: "picamera01"},
+    dataType: 'html',
+    cache: false,
+  }).done(function(data, textStatus) {
+    if (data) {
+      console.log(new Date(), 'Set result image');
+      $('#acquisition_date').text(moment().format('YYYY-MM-DD HH:mm:ss'));
+      let doc = document.getElementById('preview').contentWindow.document;
+      if (doc) {
+        doc.open();
+        doc.write(data);
+        doc.close();
+      }
+    }
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    console.error(new Date(), 'An error occurred.', textStatus);
+  });
+}
+
+function disableForm() {
+  $('select').prop('disabled', true);
+}
+function enableForm() {
+  $('select').prop('disabled', false);
+}
