@@ -143,6 +143,7 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	if setting.Period == "" {
 		setting.Period = DefaultPeriod
 	}
+	setting.DeviceId = r.FormValue("deviceId")
 	if setting.DeviceId == "" {
 		setting.DeviceId = DefaultDeviceId
 	}
