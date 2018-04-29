@@ -49,6 +49,15 @@ class GCS
   def copy_object(source_bucket, source_object, destination_bucket, destination_object, object_object = nil, destination_predefined_acl)
     @api.copy_object(source_bucket, source_object, destination_bucket, destination_object, object_object, destination_predefined_acl: destination_predefined_acl)
   end
+
+  def get_object_content(gcs_url)
+    uri = URI(gcs_url)
+    bucket = uri.host
+    name = uri.path.sub(/\A\/*/, "")
+    buf = StringIO.new
+    @api.get_object(bucket, name, download_dest: buf)
+    buf.string
+  end
 end
 
 class CloudIot
@@ -167,18 +176,24 @@ def name_to_label(name)
   LABELS.find{|i, n| n == name }[0]
 end
 
-def objs_to_stuffs(objs)
-  stuffs = case
-  when (%w{ onion tomato beef } & objs).size == 3
-    ["beef-cheese-circle-262977", "beef-cheese-closeup-41320", "beef-bowl-cherry-tomatoes-209459"]
-  when (%w{ onion tomato } & objs).size == 2
-    ["appetizer-bowl-chess-724664", "cooking-cuisine-dinner-132263"]
-  when (%w{ onion potate } & objs).size == 2
-    ["food-onion-rings-plate-263049", "bake-baked-basil-236798", "bowl-close-up-cuisine-360939"]
-  when (%w( banana corn ) & objs).size == 2
-    ["banana-cereal", "pizza2"]
-  else
+def objs_to_recipes(all_recipes, objs, setting)
+  recipes = all_recipes.select{|name, all_stuffs, label, stuffs, season, period|
+    (stuffs & objs).size == stuffs.size and season = setting["season"] and period == setting["period"]
+  }
+  if recipes.empty?
+    recipes = all_recipes.select{|name, all_stuffs, label, stuffs, season, period|
+      (stuffs & objs).size == stuffs.size and season = setting["season"]
+    }
+  end
+  if recipes.empty?
+    recipes = all_recipes.select{|name, all_stuffs, label, stuffs, season, period|
+      (stuffs & objs).size == stuffs.size
+    }
+  end
+  if recipes.empty?
     ["supermarket"]
+  else
+    recipes.map{|_, _, label, *| label }
   end
 end
 
@@ -264,16 +279,20 @@ def main(config)
   ml_model = config["ml_model"]
   iot_registry = config["iot_registry"]
   threshold = (config["score_threshold"] || 0.2).to_f
+  recipes_yaml = config["recipes_yaml"]
   $stdout.puts "PubSub:#{input_subscription} -> ML Engine -> GCS(gs://#{bucket}/) & BigQuery"
   $stdout.puts "project = #{project}"
   $stdout.puts "subscription = #{input_subscription}"
   $stdout.puts "bucket = #{bucket}"
   $stdout.puts "ml_model = #{ml_model}"
   $stdout.puts "iot_registry = #{iot_registry}"
+  $stdout.puts "recipes_yaml = #{recipes_yaml}"
   pubsub = Pubsub.new
   gcs = GCS.new
   iot = CloudIot.new
   datastore = Datastore.new(project)
+  all_recipes_yaml = gcs.get_object_content(recipes_yaml)
+  all_recipes = YAML.load(all_recipes_yaml)
 
   loop do
     msgs = pubsub.pull(input_subscription)
@@ -322,11 +341,12 @@ def main(config)
           $stdout.puts("store new cart status")
           datastore.put_cart(device, history)
           $stdout.puts("start predict next stuff")
-          next_stuff = predict_next(project, device, config["bucket_prediction_model"], history, datastore.get_setting)
+          setting = datastore.get_setting
+          next_stuff = predict_next(project, device, config["bucket_prediction_model"], history, setting)
           $stdout.puts("finish predict next stuff")
           $stdout.puts("predicted next stuff = #{next_stuff}")
           if next_stuff == "end"
-            stuffs = objs_to_stuffs(objs)
+            stuffs = objs_to_recipes(all_recipes, objs, setting)
           else
             stuffs = recommend_to_stuffs(next_stuff)
           end
@@ -355,6 +375,7 @@ if $0 == __FILE__
     config = YAML.load(File.read(config))
     config["input_subscription"] = "projects/#{config["project"]}/subscriptions/#{config["input_subscription"]}"
     config["display_base_url"] ||= "https://gcp-iost.appspot.com/display"
+    config["recipes_yaml"] ||= "gs://gcp-iost-contents/recipes.yaml"
   else
     config = {}
     config["project"] = ENV["PROJECT"]
@@ -365,6 +386,7 @@ if $0 == __FILE__
     config["iot_registry"] = ENV["IOT_REGISTRY"]
     config["score_threshold"] = Float(ENV["SCORE_THRESHOLD"] || 0.5)
     config["display_base_url"] = ENV["DISPLAY_BASE_URL"] || "https://gcp-iost.appspot.com/display"
+    config["recipes_yaml"] = ENV["RECIPES_YAML"] || "gs://gcp-iost-contents/recipes.yaml"
   end
   $stdout.sync = true
   $stderr.sync = true
