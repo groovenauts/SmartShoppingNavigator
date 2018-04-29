@@ -15,17 +15,14 @@ body {
   right: 0px;
 }
 .iframe-content {
+  display: table-row;
   position: relative;
   width: 100%;
   padding: 30px;
 }
 .iframe-content iframe {
-   position: absolute;
-   top: 0;
-   left: 0;
-   bottom: 0;
-   right: 0;
-   margin: 0 auto;
+  height: 100%;
+  width: 100%;
 }
 .header-box {
   z-index: 1;
@@ -57,6 +54,8 @@ body {
 }
 .container > .content {
   padding: 30px;
+  display: table;
+  width: 100%;
 }
 .container:nth-child(1) > .content {
   padding-right: 40px;
@@ -75,6 +74,7 @@ body {
 }
 .content-header {
   margin-bottom: 10px;
+  display: table-row;
 }
 .content-header img {
   width: 36px;
@@ -95,7 +95,7 @@ body {
 }
 .content-footer {
   color: #9E9E9E;
-  font-size: 14px;
+  font-size: 13px;
   float: right;
 }
 .left {
@@ -138,14 +138,9 @@ body {
 .section {
   padding: 0px;
 }
-
 i.camera {
   /* tweak icon position */
   vertical-align: top;
-  color: #D81B60;
-}
-i.green {
-  color: #388E3C;
 }
 i.light-grey {
   color: #E0E0E0;
