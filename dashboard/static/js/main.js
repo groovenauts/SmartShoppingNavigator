@@ -13,6 +13,7 @@ $(function() {
   $('select').change(function(e) {
     disableForm();
     let data = new FormData();
+    data.append('deviceId', $('#deviceId').val());
     data.append('season', $('#season').val());
     data.append('period', $('#period').val());
     $.ajax({
@@ -24,6 +25,8 @@ $(function() {
       contentType: false,
     }).done(function(data, textStatus) {
       console.log(new Date(), 'Submission was successful.');
+      updateSrcImg();
+      updateResult();
     }).fail(function(xhr, textStatus, errorThrown) {
       console.error(new Date(), 'An error occurred.', textStatus);
     }).always(function() {
@@ -43,7 +46,7 @@ $(function() {
 
 function updateSrcImg() {
   console.log(new Date(), 'Get input image');
-  const src = $('#src_image').attr('src');
+  var src = "https://storage.googleapis.com/gcp-iost-images/annotated/" + $('#deviceId').val() + "/annotated.jpg"
   $('#src_image').attr('src', src + '?' + new Date().getTime());
 }
 
@@ -51,7 +54,7 @@ function updateResult() {
   console.log(new Date(), 'Get result image');
   $.ajax({
     url: '/displayByDevice',
-    data: {deivceId: "picamera01"},
+    data: {deivceId: $('#deviceId').val()},
     dataType: 'html',
     cache: false,
   }).done(function(data, textStatus) {

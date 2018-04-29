@@ -18,6 +18,14 @@
     <form class="header-box" name="form" action="/setting" method="post">
         <div class="control">
           <div class="select is-small is-info is-rounded">
+            <select name="deviceId" id="deviceId">
+              <option value="picamera01" selected>camera1</option>
+              <option value="picamera02">camera2</option>
+            </select>
+          </div>
+        </div>
+        <div class="control">
+          <div class="select is-small is-info is-rounded">
             <select name="season" id="season">
               <option value="spring" {{if eq .Setting.Season "spring"}}selected{{end}}>Spring</option>
               <option value="summer" {{if eq .Setting.Season "summer"}}selected{{end}}>Summer</option>
@@ -46,7 +54,7 @@
             <i class="material-icons camera" title="camera">linked_camera</i>
           </span>
           <div>
-            <img id="src_image" src="https://storage.googleapis.com/gcp-iost-images/annotated/picamera01/annotated.jpg" />
+            <img id="src_image" src="https://storage.googleapis.com/gcp-iost-images/annotated/{{.Setting.DeviceId}}/annotated.jpg" />
           </div>
           <div class="content-footer">&nbsp;</div>
           </div>
