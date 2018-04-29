@@ -199,7 +199,7 @@ end
 
 def recommend_to_stuffs(recommend)
   if recommend and name_to_label(recommend)
-    ["recommend/#{recommend}.jpg"]
+    ["recommend/#{recommend}"]
   else
     ["supermarket.jpg"]
   end
