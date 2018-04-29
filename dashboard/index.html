@@ -19,19 +19,19 @@
         <div class="control">
           <div class="select is-small is-info is-rounded">
             <select name="season" id="season">
-              <option value="spring">Spring</option>
-              <option value="summer">Summer</option>
-              <option value="fall">Fall</option>
-              <option value="winter">Winter</option>
+              <option value="spring" {{if eq .Setting.Season "spring"}}selected{{end}}>Spring</option>
+              <option value="summer" {{if eq .Setting.Season "summer"}}selected{{end}}>Summer</option>
+              <option value="fall" {{if eq .Setting.Season "fall"}}selected{{end}}>Fall</option>
+              <option value="winter" {{if eq .Setting.Season "winter"}}selected{{end}}>Winter</option>
             </select>
           </div>
         </div>
         <div class="control">
             <div class="select is-small is-info is-rounded">
               <select name="period" id="period">
-                <option value="morning">Morning</option>
-                <option value="nonn">Noon</option>
-                <option value="evening">Evening</option>
+                <option value="morning" {{if eq .Setting.Period "morning"}}selected{{end}}>Morning</option>
+                <option value="noon" {{if eq .Setting.Period "noon"}}selected{{end}}>Noon</option>
+                <option value="evening" {{if eq .Setting.Period "evening"}}selected{{end}}>Evening</option>
               </select>
             </div>
           </div>
