@@ -12,10 +12,16 @@ setInterval(function() {
 $(function() {
   $('select').change(function(e) {
     disableForm();
+    let data = new FormData();
+    data.append('season', $('#season').val());
+    data.append('period', $('#period').val());
     $.ajax({
       url: '/setting',
       type: 'POST',
-      data: $('form').serialize(),
+      data: data,
+      cache : false,
+      processData: false,
+      contentType: false,
     }).done(function(data, textStatus) {
       console.log(new Date(), 'Submission was successful.');
     }).fail(function(xhr, textStatus, errorThrown) {
