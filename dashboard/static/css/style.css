@@ -30,7 +30,6 @@ body {
   top: 20px;
   right: 30px;
   display: flex;
-  flex-direction: row-reverse;
 }
 .header-box > *:nth-last-child(n + 1) {
   margin-left: 10px;
