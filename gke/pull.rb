@@ -256,7 +256,7 @@ def encode_cart_history_to_vector(history)
   history.map{|stuffs| LABELS.map{|_, name| stuffs.include?(name) ? 1 : 0 } }
 end
 
-def predict_next(project, device, model, history, setting)
+def predict_next(project, model, history, setting)
   pred = ML.predict(project, model, [{"key" => "1", "cart_history" => encode_cart_history_to_vector(history), "season" => setting["season"], "period" => setting["period"] }])
 $stdout.puts(pred.inspect)
   scores = pred[0]["score"]
@@ -342,7 +342,7 @@ def main(config)
           datastore.put_cart(device, history)
           $stdout.puts("start predict next stuff")
           setting = datastore.get_setting
-          next_stuff = predict_next(project, device, config["bucket_prediction_model"], history, setting)
+          next_stuff = predict_next(project, config["bucket_prediction_model"], history, setting)
           $stdout.puts("finish predict next stuff")
           $stdout.puts("predicted next stuff = #{next_stuff}")
           if next_stuff == "end"
