@@ -1,4 +1,4 @@
-const INPUT_UPDATE_INTERVAL = 10000;
+const INPUT_UPDATE_INTERVAL = 1000;
 const OUTPUT_UPDATE_INTERVAL = 10000;
 
 setInterval(function() {
