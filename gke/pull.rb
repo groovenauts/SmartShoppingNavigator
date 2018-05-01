@@ -204,9 +204,8 @@ def items_to_recipes(all_recipes, objs, key_item)
   end
 end
 
-def recipes_to_url(base_url, recipes)
-p recipes
-  base_url + "?" + URI.encode_www_form(recipes.map{|u| ["contents", u["key"]] })
+def recipes_to_url(base_url, device, recipes)
+  base_url + "?" + URI.encode_www_form([["deviceId", device]] + recipes.map{|u| ["contents", u["key"]] })
 end
 
 def draw_bbox_image(b64_image, predictions, time, threshold=0.5)
@@ -334,7 +333,7 @@ def main(config)
           datastore.put_cart(device, [[]])
           recipes = [{ "key" => "supermarket", "missingItem" => [] }]
           datastore.put_device(device, objs, recipes)
-          url = recipes_to_url(config["display_base_url"], recipes)
+          url = recipes_to_url(config["display_base_url"], device, recipes)
         else
           # new item
           history << objs
@@ -350,7 +349,7 @@ def main(config)
           end
           recipes = items_to_recipes(all_recipes, objs, key_item)
           datastore.put_device(device, objs, recipes)
-          url = recipes_to_url(config["display_base_url"], recipes)
+          url = recipes_to_url(config["display_base_url"], device, recipes)
         end
         if data["dashboard_url"] != url
           $stdout.puts("URL change to #{url}")
