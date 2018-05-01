@@ -1,9 +1,7 @@
 # coding: utf-8
 
 require "yaml"
-require "kura"
-require "google/apis/storage_v1"
-require_relative "../gke/pull"
+require_relative "../pull"
 
 def main(config, season, period, items)
   project = config["project"]
