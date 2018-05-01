@@ -177,17 +177,17 @@ def name_to_label(name)
 end
 
 def objs_to_recipes(all_recipes, objs, setting)
-  recipes = all_recipes.select{|name, all_stuffs, label, stuffs, season, period|
-    (stuffs & objs).size == stuffs.size and season = setting["season"] and period == setting["period"]
+  recipes = all_recipes.select{|name, all_items, label, items, season, period|
+    (items & objs).size == items.size and season = setting["season"] and period == setting["period"]
   }
   if recipes.empty?
-    recipes = all_recipes.select{|name, all_stuffs, label, stuffs, season, period|
-      (stuffs & objs).size == stuffs.size and season = setting["season"]
+    recipes = all_recipes.select{|name, all_items, label, items, season, period|
+      (items & objs).size == items.size and season = setting["season"]
     }
   end
   if recipes.empty?
-    recipes = all_recipes.select{|name, all_stuffs, label, stuffs, season, period|
-      (stuffs & objs).size == stuffs.size
+    recipes = all_recipes.select{|name, all_items, label, items, season, period|
+      (items & objs).size == items.size
     }
   end
   if recipes.empty?
@@ -197,8 +197,8 @@ def objs_to_recipes(all_recipes, objs, setting)
   end
 end
 
-def stuffs_to_url(base_url, stuffs)
-  base_url + "?" + URI.encode_www_form(stuffs.map{|u| ["contents", u] })
+def recipes_to_url(base_url, recipes)
+  base_url + "?" + URI.encode_www_form(recipes.map{|u| ["contents", u] })
 end
 
 def draw_bbox_image(b64_image, predictions, time, threshold=0.5)
@@ -245,7 +245,7 @@ def encode_cart_history_to_vector(history)
     history.unshift([])
   end
   history = history[-4, 4]
-  history.map{|stuffs| LABELS.map{|_, name| stuffs.include?(name) ? 1 : 0 } }
+  history.map{|items| LABELS.map{|_, name| items.include?(name) ? 1 : 0 } }
 end
 
 def predict_next(project, model, history, setting)
@@ -306,7 +306,7 @@ def main(config)
       pred = ML.predict(project, ml_model, [{"key" => "1", "image" => { "b64" => b64_image } }])
       $stdout.puts("finished object detection")
       objs = pred[0]["detection_classes"].zip(pred[0]["detection_scores"]).select{|label, score| score > threshold}.map{|label, score| [LABELS[label.to_i], score] }
-      $stdout.puts("detected stuffs: #{objs.inspect}")
+      $stdout.puts("detected items: #{objs.inspect}")
       objs = objs.map{|o| o[0] }.compact.uniq.sort
 
       # create bounding box image
@@ -324,25 +324,25 @@ def main(config)
           # reset cart
           $stdout.puts("reset cart")
           datastore.put_cart(device, [[]])
-          stuffs = ["supermarket"]
+          recipes = ["supermarket"]
           datastore.put_device(device, objs, ["supermarket"])
           url = config["display_base_url"]
         else
-          # new stuff
+          # new item
           history << objs
           $stdout.puts("store new cart status")
           datastore.put_cart(device, history)
-          $stdout.puts("start predict next stuff")
+          $stdout.puts("start predict next item")
           setting = datastore.get_setting
-          next_stuff = predict_next(project, config["bucket_prediction_model"], history, setting)
-          $stdout.puts("finish predict next stuff")
-          $stdout.puts("predicted next stuff = #{next_stuff}")
-          if next_stuff != "end"
-            objs = objs | [next_stuff]
+          next_item = predict_next(project, config["bucket_prediction_model"], history, setting)
+          $stdout.puts("finish predict next item")
+          $stdout.puts("predicted next item = #{next_item}")
+          if next_item != "end"
+            objs = objs | [next_item]
           end
-          stuffs = objs_to_recipes(all_recipes, objs, setting)
-          datastore.put_device(device, objs, stuffs)
-          url = stuffs_to_url(config["display_base_url"], stuffs)
+          recipes = objs_to_recipes(all_recipes, objs, setting)
+          datastore.put_device(device, objs, recipes)
+          url = recipes_to_url(config["display_base_url"], recipes)
         end
         if data["dashboard_url"] != url
           $stdout.puts("URL change to #{url}")
