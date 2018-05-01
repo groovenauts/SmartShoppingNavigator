@@ -345,11 +345,10 @@ def main(config)
           next_stuff = predict_next(project, config["bucket_prediction_model"], history, setting)
           $stdout.puts("finish predict next stuff")
           $stdout.puts("predicted next stuff = #{next_stuff}")
-          if next_stuff == "end"
-            stuffs = objs_to_recipes(all_recipes, objs, setting)
-          else
-            stuffs = recommend_to_stuffs(next_stuff)
+          if next_stuff != "end"
+            objs = objs | [next_stuff]
           end
+          stuffs = objs_to_recipes(all_recipes, objs, setting)
           datastore.put_device(device, objs, stuffs)
           url = stuffs_to_url(config["display_base_url"], stuffs)
         end
