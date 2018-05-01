@@ -180,18 +180,20 @@ WelcomeDisplay = { "key" => "supermarket", "title" => "Smart Shopping Cart", "mi
 
 def items_to_recipes(all_recipes, objs, key_item)
   original_objs = objs.dup
+  recipes = []
   if key_item
-    all_recipes = all_recipes.select{|_, _, _, items, _, _|
-      items.include?(key_item)
+    recipes = all_recipes.select{|_, _, _, items, _, _|
+      (items & (objs | [key_item])).size == (objs | [key_item]).size
     }
-    objs |= [key_item]
   end
-  recipes = all_recipes.select{|_, _, _, items, _, _|
-    (items & objs).size == items.size
-  }
   if recipes.empty?
     recipes = all_recipes.select{|_, _, _, items, _, _|
       (items & objs).size == objs.size
+    }
+  end
+  if recipes.empty?
+    recipes = all_recipes.select{|_, _, _, items, _, _|
+      (items & objs).size == items.size
     }
   end
   if recipes.empty?
