@@ -1,5 +1,6 @@
 const INPUT_UPDATE_INTERVAL = 1000;
-const OUTPUT_UPDATE_INTERVAL = 10000;
+const OUTPUT_UPDATE_INTERVAL = 1000;
+var displayLastUpdatedAt = null;
 
 setInterval(function() {
   updateSrcImg();
@@ -51,6 +52,27 @@ function updateSrcImg() {
 }
 
 function updateResult() {
+  console.log(new Date(), 'Get device info');
+  $.ajax({
+    url: '/device',
+    data: {deivceId: $('#deviceId').val()},
+    dataType: 'json',
+    cache: false,
+  }).done(function(data, textStatus) {
+    if (data == null) {
+      refreshResult();
+    } else {
+      if (displayLastUpdatedAt == null || displayLastUpdatedAt < data.unixtime) {
+        refreshResult();
+        displayLastUpdatedAt = data.unixtime;
+      }
+    }
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    console.error(new Date(), 'An error occurred.', textStatus);
+  });
+}
+
+function refreshResult() {
   console.log(new Date(), 'Get result image');
   $.ajax({
     url: '/displayByDevice',

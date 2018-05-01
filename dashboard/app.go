@@ -45,6 +45,7 @@ type displayTemplateParams struct {
 func init() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/setting", settingHandler)
+	http.HandleFunc("/device", getDeviceHandler)
 	http.HandleFunc("/display", displayHandler)
 	http.HandleFunc("/displayByDevice", displayByDeviceHandler)
 	http.HandleFunc("/slide", slideHandler)
@@ -175,6 +176,26 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 
 	template := template.Must(template.ParseFiles("display.html"))
 	template.Execute(w, params)
+	return
+}
+
+func getDeviceHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
+	deviceId := r.FormValue("deivceId")
+	if deviceId == "" {
+		deviceId = DefaultDeviceId
+	}
+	_, device, e := getDevice(ctx, deviceId)
+	if e != nil {
+		fmt.Fprint(w, "{\"error\":\"failed to get device information.\"}")
+		return
+	}
+	j, e := json.Marshal(device)
+	if e != nil {
+		fmt.Fprint(w, "Fail to encode to JSON.")
+		return
+	}
+	fmt.Fprint(w, string(j))
 	return
 }
 
