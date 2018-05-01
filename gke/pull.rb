@@ -197,14 +197,6 @@ def objs_to_recipes(all_recipes, objs, setting)
   end
 end
 
-def recommend_to_stuffs(recommend)
-  if recommend and name_to_label(recommend)
-    ["recommend/#{recommend}"]
-  else
-    ["supermarket.jpg"]
-  end
-end
-
 def stuffs_to_url(base_url, stuffs)
   base_url + "?" + URI.encode_www_form(stuffs.map{|u| ["contents", u] })
 end
