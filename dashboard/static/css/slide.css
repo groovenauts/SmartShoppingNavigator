@@ -15,7 +15,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  font-size: 32pt;
+  font-size: 4vw;
 }
 
 #recipe-detail {
@@ -26,11 +26,13 @@ body {
 
 .recppe-detail-header {
   font-style: italic;
+  font-size: 2vw;
 }
 
 .missing-item {
   display: block;
   margin-left: 1em;
+  font-size: 2.5vw;
 }
 
 #main-view {
