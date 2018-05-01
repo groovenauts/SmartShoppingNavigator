@@ -192,12 +192,12 @@ def items_to_recipes(all_recipes, objs, key_item)
     }
   end
   if recipes.empty?
-    [{ "key" => "supermarket", "missingItems" => [] }]
+    [{ "key" => "supermarket", "missingItems" => "" }]
   else
     recipes.map{|name, all_items, label, items, season, period|
       {
         "title" => name,
-        "missingItems" => all_items.split(",") - objs,
+        "missingItems" => (all_items.split(",") - objs).join(","),
         "key" => label,
       }
     }
