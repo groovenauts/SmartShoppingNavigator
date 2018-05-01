@@ -24,8 +24,13 @@ body {
   right: 0;
 }
 
+.recppe-detail-header {
+  font-style: italic;
+}
+
 .missing-item {
   display: block;
+  margin-left: 1em;
 }
 
 #main-view {

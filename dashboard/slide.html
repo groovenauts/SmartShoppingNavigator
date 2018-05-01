@@ -9,7 +9,7 @@
   <div class=recipe id=recipe-title>{{.Title}}</div>
   {{if .ShowDetail}}
   <div class=recipe id=recipe-detail>
-    <span>Items to add:</span>
+    <span class=recppe-detail-header>Items to add:</span>
     {{range .MissingItems}}
     <div class=missing-item>{{.Name}} ({{.Price}}. At {{.Location}})</div>
     {{end}}
