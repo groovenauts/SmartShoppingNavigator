@@ -55,7 +55,7 @@ function updateResult() {
   console.log(new Date(), 'Get device info');
   $.ajax({
     url: '/device',
-    data: {deivceId: $('#deviceId').val()},
+    data: {deviceId: $('#deviceId').val()},
     dataType: 'json',
     cache: false,
   }).done(function(data, textStatus) {
@@ -76,7 +76,7 @@ function refreshResult() {
   console.log(new Date(), 'Get result image');
   $.ajax({
     url: '/displayByDevice',
-    data: {deivceId: $('#deviceId').val()},
+    data: {deviceId: $('#deviceId').val()},
     dataType: 'html',
     cache: false,
   }).done(function(data, textStatus) {

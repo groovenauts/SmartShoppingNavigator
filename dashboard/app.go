@@ -191,7 +191,7 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 
 func getDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
-	deviceId := r.FormValue("deivceId")
+	deviceId := r.FormValue("deviceId")
 	if deviceId == "" {
 		deviceId = DefaultDeviceId
 	}
@@ -211,7 +211,7 @@ func getDeviceHandler(w http.ResponseWriter, r *http.Request) {
 
 func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
-	deviceId := r.FormValue("deivceId")
+	deviceId := r.FormValue("deviceId")
 	if deviceId == "" {
 		deviceId = DefaultDeviceId
 	}
