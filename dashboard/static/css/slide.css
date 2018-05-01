@@ -8,14 +8,13 @@ body {
   background-color: rgba(255, 255, 255, 0.8);
   font-family: courier;
   padding: 10px;
-  border-color: #a5fffe;
 }
 
 #recipe-title {
   position: absolute;
   top: 0;
   left: 0;
-  border-bottom-style: outset;
+  right: 0;
   font-size: 32pt;
 }
 
@@ -23,8 +22,6 @@ body {
   position: absolute;
   bottom: 0;
   right: 0;
-  border-top-style: outset;
-  border-left-style: outset;
 }
 
 .missing-item {
