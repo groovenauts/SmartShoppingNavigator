@@ -176,6 +176,8 @@ def name_to_label(name)
   LABELS.find{|i, n| n == name }[0]
 end
 
+WelcomeDisplay = { "key" => "supermarket", "title" => "Smart Shopping Cart", "missingItems" => "" }
+
 def items_to_recipes(all_recipes, objs, key_item)
   if key_item
     all_recipes = all_recipes.select{|_, _, _, items, _, _|
@@ -192,7 +194,7 @@ def items_to_recipes(all_recipes, objs, key_item)
     }
   end
   if recipes.empty?
-    [{ "key" => "supermarket", "missingItems" => "" }]
+    [WelcomeDisplay]
   else
     recipes.map{|name, all_items, label, items, season, period|
       {
@@ -331,7 +333,7 @@ def main(config)
           # reset cart
           $stdout.puts("reset cart")
           datastore.put_cart(device, [[]])
-          recipes = [{ "key" => "supermarket", "missingItem" => [] }]
+          recipes = [WelcomeDisplay]
           datastore.put_device(device, objs, recipes)
           url = recipes_to_url(config["display_base_url"], device, recipes)
         else
