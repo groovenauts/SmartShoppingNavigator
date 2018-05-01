@@ -118,7 +118,7 @@ class Datastore
     entity["deviceId"] = device
     entity["unixtime"] = Time.now.to_i
     entity["objects"] = objs
-    entity["recommends"] = recommends
+    entity["recommends"] = recommends.map{|i| JSON.generate(i) }
     @dataset.save(entity)
   end
 end
@@ -176,29 +176,37 @@ def name_to_label(name)
   LABELS.find{|i, n| n == name }[0]
 end
 
-def objs_to_recipes(all_recipes, objs, setting)
-  recipes = all_recipes.select{|name, all_items, label, items, season, period|
-    (items & objs).size == items.size and season = setting["season"] and period == setting["period"]
+def items_to_recipes(all_recipes, objs, key_item)
+  if key_item
+    all_recipes = all_recipes.select{|_, _, _, items, _, _|
+      items.include?(key_item)
+    }
+    objs |= [key_item]
+  end
+  recipes = all_recipes.select{|_, _, _, items, _, _|
+    (items & objs).size == items.size
   }
   if recipes.empty?
-    recipes = all_recipes.select{|name, all_items, label, items, season, period|
-      (items & objs).size == items.size and season = setting["season"]
+    recipes = all_recipes.select{|_, _, _, items, _, _|
+      (items & objs).size == objs.size
     }
   end
   if recipes.empty?
-    recipes = all_recipes.select{|name, all_items, label, items, season, period|
-      (items & objs).size == items.size
-    }
-  end
-  if recipes.empty?
-    ["supermarket"]
+    [{ "key" => "supermarket", "missingItems" => [] }]
   else
-    recipes.map{|_, _, label, *| label }
+    recipes.map{|name, all_items, label, items, season, period|
+      {
+        "title" => name,
+        "missingItems" => all_items.split(",") - objs,
+        "key" => label,
+      }
+    }
   end
 end
 
 def recipes_to_url(base_url, recipes)
-  base_url + "?" + URI.encode_www_form(recipes.map{|u| ["contents", u] })
+p recipes
+  base_url + "?" + URI.encode_www_form(recipes.map{|u| ["contents", u["key"]] })
 end
 
 def draw_bbox_image(b64_image, predictions, time, threshold=0.5)
@@ -250,7 +258,6 @@ end
 
 def predict_next(project, model, history, setting)
   pred = ML.predict(project, model, [{"key" => "1", "cart_history" => encode_cart_history_to_vector(history), "season" => setting["season"], "period" => setting["period"] }])
-$stdout.puts(pred.inspect)
   scores = pred[0]["score"]
   if setting["recommend"]
     idx = name_to_label(setting["recommend"]["label"])
@@ -292,6 +299,7 @@ def main(config)
     next if msgs.empty?
     msgs.each do |m|
       device = m.message.attributes["deviceId"]
+      $stdout.puts "Device: #{device}"
       # Store original image to GCS
       time = Time.parse(m.message.publish_time)
       obj_name = time.strftime("original/#{device}/%Y-%m-%d/%H/%Y%m%d_%H%M%S.jpg")
@@ -324,9 +332,9 @@ def main(config)
           # reset cart
           $stdout.puts("reset cart")
           datastore.put_cart(device, [[]])
-          recipes = ["supermarket"]
-          datastore.put_device(device, objs, ["supermarket"])
-          url = config["display_base_url"]
+          recipes = [{ "key" => "supermarket", "missingItem" => [] }]
+          datastore.put_device(device, objs, recipes)
+          url = recipes_to_url(config["display_base_url"], recipes)
         else
           # new item
           history << objs
@@ -338,9 +346,9 @@ def main(config)
           $stdout.puts("finish predict next item")
           $stdout.puts("predicted next item = #{next_item}")
           if next_item != "end"
-            objs = objs | [next_item]
+            key_item = next_item
           end
-          recipes = objs_to_recipes(all_recipes, objs, setting)
+          recipes = items_to_recipes(all_recipes, objs, key_item)
           datastore.put_device(device, objs, recipes)
           url = recipes_to_url(config["display_base_url"], recipes)
         end
