@@ -27,7 +27,7 @@ $(function() {
     }).done(function(data, textStatus) {
       console.log(new Date(), 'Submission was successful.');
       updateSrcImg();
-      updateResult();
+      refreshResult();
     }).fail(function(xhr, textStatus, errorThrown) {
       console.error(new Date(), 'An error occurred.', textStatus);
     }).always(function() {
