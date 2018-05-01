@@ -36,7 +36,7 @@ type indexTemplateParams struct {
 }
 
 type displayTemplateParams struct {
-	Stuffs    []string
+	Items    []string
 	Timestamp string
 	Loop      bool
 }
@@ -160,16 +160,16 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 func displayHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	query, e := url.ParseQuery(r.URL.RawQuery)
-	stuffs := []string{}
+	items := []string{}
 	if e != nil {
 		log.Errorf(ctx, "Parse query failed: %v", e)
 	} else {
-		stuffs = query["contents"]
+		items = query["contents"]
 	}
 	params := displayTemplateParams{
-		Stuffs:    stuffs,
+		Items:    items,
 		Timestamp: "",
-		Loop:      len(stuffs) > 1,
+		Loop:      len(items) > 1,
 	}
 
 	template := template.Must(template.ParseFiles("display.html"))
@@ -204,19 +204,20 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		deviceId = DefaultDeviceId
 	}
 	_, device, e := getDevice(ctx, deviceId)
-	var stuffs []string
+	var items []string
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	if e == nil && device != nil && device.Recommends != nil {
-		stuffs = device.Recommends
+		items = device.Recommends
 		timestamp = time.Unix(device.Unixtime, 0).Format("2006-01-02 15:04:05")
 	} else {
-		stuffs = []string{"supermarket"}
+		//items = []string{"supermarket"}
+                items = []string{"{\"title\":\"Healthy salad\", \"missingItem\":[\"carrot\"], \"key\":\"bowl-bright-close-up-248509\"}"}
 	}
-	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, stuffs)
+	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, items)
 	params := displayTemplateParams{
-		Stuffs:    stuffs,
+		Items:    items,
 		Timestamp: timestamp,
-		Loop:      len(stuffs) > 1,
+		Loop:      len(items) > 1,
 	}
 	template := template.Must(template.ParseFiles("display.html"))
 	template.Execute(w, params)
@@ -224,8 +225,8 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func slideHandler(w http.ResponseWriter, r *http.Request) {
-	stuff := r.FormValue("stuff")
+	item := r.FormValue("item")
 	template := template.Must(template.ParseFiles("slide.html"))
-	template.Execute(w, stuff)
+	template.Execute(w, item)
 	return
 }
