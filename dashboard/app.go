@@ -37,7 +37,6 @@ type indexTemplateParams struct {
 
 type displayTemplateParams struct {
 	Stuffs    []string
-	AutoSwipe bool
 	Timestamp string
 	Loop      bool
 }
@@ -169,7 +168,6 @@ func displayHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	params := displayTemplateParams{
 		Stuffs:    stuffs,
-		AutoSwipe: true,
 		Timestamp: "",
 		Loop:      len(stuffs) > 1,
 	}
@@ -217,7 +215,6 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, stuffs)
 	params := displayTemplateParams{
 		Stuffs:    stuffs,
-		AutoSwipe: false,
 		Timestamp: timestamp,
 		Loop:      len(stuffs) > 1,
 	}
