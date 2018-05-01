@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
+	"strings"
 	"time"
 
 	"google.golang.org/appengine"
@@ -31,21 +31,40 @@ type Device struct {
 	Recommends []string `json:"recommends" datastore:"recommends"`
 }
 
+type Recommend struct {
+	Title        string `json:"title"`
+	Key          string `json:"key"`
+	MissingItems string `json:"missingItems"`
+}
+
+type Item struct {
+	Name     string `json:"name" datastore:"name"`
+	Price    string `json:"price" datastore:"price"`
+	Location string `json:"location" datastore:"location"`
+}
+
 type indexTemplateParams struct {
 	Setting Setting
 }
 
 type displayTemplateParams struct {
-	Items    []string
-	Timestamp string
-	Loop      bool
+	Recommends []Recommend
+	Timestamp  string
+	Loop       bool
+}
+
+type slideTemplateParams struct {
+	Item         string
+	Title        string
+	ShowDetail   bool
+	MissingItems []Item
 }
 
 func init() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/setting", settingHandler)
 	http.HandleFunc("/device", getDeviceHandler)
-	http.HandleFunc("/display", displayHandler)
+	http.HandleFunc("/display", displayByDeviceHandler)
 	http.HandleFunc("/displayByDevice", displayByDeviceHandler)
 	http.HandleFunc("/slide", slideHandler)
 }
@@ -74,6 +93,19 @@ func getDevice(ctx context.Context, deviceId string) (*datastore.Key, *Device, e
 		return nil, nil, e
 	}
 	return key, device, nil
+}
+
+func getItem(ctx context.Context, name string) (*datastore.Key, *Item, error) {
+	key := datastore.NewKey(ctx, "Item", name, 0, nil)
+	item := new(Item)
+	e := datastore.Get(ctx, key, item)
+	if e != nil {
+		if e.Error() == "datastore: no such entity" {
+			e = nil
+		}
+		return nil, nil, e
+	}
+	return key, item, nil
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -157,26 +189,6 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func displayHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
-	query, e := url.ParseQuery(r.URL.RawQuery)
-	items := []string{}
-	if e != nil {
-		log.Errorf(ctx, "Parse query failed: %v", e)
-	} else {
-		items = query["contents"]
-	}
-	params := displayTemplateParams{
-		Items:    items,
-		Timestamp: "",
-		Loop:      len(items) > 1,
-	}
-
-	template := template.Must(template.ParseFiles("display.html"))
-	template.Execute(w, params)
-	return
-}
-
 func getDeviceHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	deviceId := r.FormValue("deivceId")
@@ -211,13 +223,20 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		timestamp = time.Unix(device.Unixtime, 0).Format("2006-01-02 15:04:05")
 	} else {
 		//items = []string{"supermarket"}
-                items = []string{"{\"title\":\"Healthy salad\", \"missingItem\":[\"carrot\"], \"key\":\"bowl-bright-close-up-248509\"}"}
+		items = []string{"{\"title\":\"Healthy salad\", \"missingItems\":\"carrot\", \"key\":\"bowl-bright-close-up-248509\"}"}
 	}
 	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, items)
+
+	recommends := make([]Recommend, len(items))
+	for i := 0; i < len(items); i++ {
+		if e := json.Unmarshal([]byte(items[i]), &recommends[i]); e != nil {
+			log.Errorf(ctx, "Failed to parse JSON %v: %v", items[i], e)
+		}
+	}
 	params := displayTemplateParams{
-		Items:    items,
-		Timestamp: timestamp,
-		Loop:      len(items) > 1,
+		Recommends: recommends,
+		Timestamp:  timestamp,
+		Loop:       len(items) > 1,
 	}
 	template := template.Must(template.ParseFiles("display.html"))
 	template.Execute(w, params)
@@ -225,8 +244,35 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func slideHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := appengine.NewContext(r)
 	item := r.FormValue("item")
+	title := r.FormValue("title")
+	missing := r.FormValue("missingItems")
+	missingItems := []string{}
+	if len(missing) > 0 {
+		missingItems = strings.Split(missing, ",")
+	}
+	missingDetails := make([]Item, len(missingItems))
+	for i := 0; i < len(missingItems); i++ {
+		_, detail, e := getItem(ctx, missingItems[i])
+		if e == nil && detail != nil {
+			missingDetails[i] = *detail
+		} else {
+			missingDetails[i] = Item{
+				Name:     "Xxxx",
+				Price:    "$1.5",
+				Location: "section X1",
+			}
+		}
+	}
+
+	params := slideTemplateParams{
+		Item:         item,
+		Title:        title,
+		ShowDetail:   len(missing) > 0,
+		MissingItems: missingDetails,
+	}
 	template := template.Must(template.ParseFiles("slide.html"))
-	template.Execute(w, item)
+	template.Execute(w, params)
 	return
 }
