@@ -179,6 +179,7 @@ end
 WelcomeDisplay = { "key" => "supermarket", "title" => "Smart Shopping Cart", "missingItems" => "" }
 
 def items_to_recipes(all_recipes, objs, key_item)
+  original_objs = objs.dup
   if key_item
     all_recipes = all_recipes.select{|_, _, _, items, _, _|
       items.include?(key_item)
@@ -199,7 +200,7 @@ def items_to_recipes(all_recipes, objs, key_item)
     recipes.map{|name, all_items, label, items, season, period|
       {
         "title" => name,
-        "missingItems" => (all_items.split(",") - objs).join(","),
+        "missingItems" => (all_items.split(",") - original_objs).join(","),
         "key" => label,
       }
     }
