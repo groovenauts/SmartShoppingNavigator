@@ -1,6 +1,6 @@
-# Smart Shopping Cart
+# Smart Shopping Navigator
 
-Smart Shopping Cart is the demonstration application where it combines [Cloud IoT Core](https://cloud.google.com/iot-core/)
+Smart Shopping Navigator is the demonstration application where it combines [Cloud IoT Core](https://cloud.google.com/iot-core/)
 and [Cloud Machine Learning Engine](http://cloud.google.com/ml).
 
 ## Requirements
