@@ -261,7 +261,7 @@ func slideHandler(w http.ResponseWriter, r *http.Request) {
 			missingDetails[i] = Item{
 				Name:     missingItems[i],
 				Price:    "$1.5",
-				Location: "section A1",
+				Location: "A1",
 			}
 		}
 	}
