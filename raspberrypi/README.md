@@ -1,6 +1,6 @@
-# IoST demo (Raspberry Pi)
+# Smart Shopping Navigator demo (Raspberry Pi)
 
-## Setup Raspberry Pi for IoST demo
+## Setup Raspberry Pi for Smart Shopping Navigator demo
 
 ### Requirements
 
@@ -13,7 +13,7 @@
 
 See [public documentation](https://www.raspberrypi.org/documentation/setup/) for details about setup Raspberry Pi in general.
 
-IoST Demo applications are designed to work on Rasbian stretch with Desktop.
+Smart Shopping Navigator Demo applications are designed to work on Rasbian stretch with Desktop.
 
 1. Download novel rasbian image file with desktop from https://www.raspberrypi.org/downloads/raspbian/
 2. Install operating system image to SD card. See https://www.raspberrypi.org/documentation/installation/installing-images/
@@ -33,13 +33,13 @@ IoST Demo applications are designed to work on Rasbian stretch with Desktop.
 1. Insert HyperPixel into GPIO port.
 2. Follow instructions in [HyperPixel driver](https://github.com/pimoroni/hyperpixel)
 
-### Install IoST demo applications
+### Install Smart Shopping Navigator demo applications
 
 #### Copy files to Raspberry Pi.
 
 ```
-$ git clone https://github.com/groovenauts/iost-demo.git
-$ cd iost-demo/raspberrypi/files
+$ git clone https://github.com/groovenauts/SmartShoppingNavigator.git
+$ cd SmartShoppingNavigator/raspberrypi/files
 $ rsync -auz home/pi/ /home/pi/
 $ sudo rsync -auz etc/ /etc/
 ```
@@ -50,7 +50,7 @@ The corresponding `device` resource should be created in [Cloud IoT Core](https:
 Please read [Creating Registries and Devices](https://cloud.google.com/iot/docs/how-tos/devices) for details.
 
 During creating device in Cloud IoT Core, you should [create device key paire](https://cloud.google.com/iot/docs/how-tos/credentials/keys) to authenticate the device.
-IoST demo applications support only ES256 key.
+Smart Shopping Navigator demo applications support only ES256 key.
 Please generate ES256 key pair.
 
 And copy private key file to Raspberry Pi as `/home/pi/ec_private.pem`.
