@@ -223,7 +223,7 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		timestamp = time.Unix(device.Unixtime, 0).Format("2006-01-02 15:04:05")
 	} else {
 		//items = []string{"supermarket"}
-		items = []string{"{\"title\":\"Healthy salad\", \"missingItems\":\"carrot\", \"key\":\"bowl-bright-close-up-248509\"}"}
+		items = []string{"{\"title\":\"Healthy salad\", \"missingItems\":\"carrot,paprika,tomato\", \"key\":\"bowl-bright-close-up-248509\"}"}
 	}
 	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, items)
 
