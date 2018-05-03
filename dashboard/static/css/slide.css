@@ -16,12 +16,17 @@ body {
   left: 0;
   right: 0;
   font-size: 4vw;
+  bottom: 87%;
 }
 
 #recipe-detail {
   position: absolute;
+  top: 13%;
   bottom: 0;
   right: 0;
+  padding: 0;
+  margin: 0;
+  width: 30%;
 }
 
 .recppe-detail-header {
@@ -31,8 +36,30 @@ body {
 
 .missing-item {
   display: block;
-  margin-left: 1em;
   font-size: 2.5vw;
+  height: 29%;
+  background-size: cover;
+}
+
+.missing-item-cover {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.missing-item-name {
+  color: #5ba63e;
+  display: inline-block;
+  margin-left: 1em;
+}
+.missing-item-price {
+  color: #008029;
+  display: inline-block;
+}
+.missing-item-location {
+  color: #bb7314;
+  display: block;
+  margin-left: 1em;
 }
 
 #main-view {
