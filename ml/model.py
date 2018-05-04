@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-SHOPPING_ITEMS = ["tomato", "onion", "chicken", "eggplant", "beef", "corn", "pork", "egg", "milk", "cheese"]
+SHOPPING_ITEMS = ["onion", "tomato", "potato", "paprika", "eggplant", "beef", "pork", "chicken", "banana", "corn"]
 HISTORY_SIZE=4
 
 def model_fn(features, labels, mode):
