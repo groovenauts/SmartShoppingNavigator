@@ -233,7 +233,7 @@ def draw_bbox_image(b64_image, predictions, time, threshold=0.5)
     label = label_to_name(rec["detection_classes"][idx]) || "none"
     # MEMO: Remove paprika from detected objects
     #       Because current model tend to detect false positive for paprika under the lighting eveironment of warm colors.
-    next if label == "none" or label == "paprika"
+    next if label == "none" or label == "paprika" or label == "beef"
     xmin = (rec["detection_box_xmin"][idx] * width).to_i
     ymin = (rec["detection_box_ymin"][idx] * height).to_i
     xmax = (rec["detection_box_xmax"][idx] * width).to_i
@@ -324,9 +324,9 @@ def main(config)
       $stdout.puts("detected items: #{objs.inspect}")
       objs = objs.map{|o| o[0] }.compact.uniq.sort
 
-      # MEMO: Remove paprika from detected objects
+      # MEMO: Remove paprika and beef from detected objects
       #       Because current model tend to detect false positive for paprika under the lighting eveironment of warm colors.
-      objs -= ["paprika"]
+      objs -= ["paprika", "beef"]
 
       # create bounding box image
       th = Thread.start(device, b64_image, pred.first, time) do |dev, img, p, t|
