@@ -6,7 +6,7 @@ body {
   z-index: 1;
   color: #0bc53e;
   background-color: rgba(255, 255, 255, 0.8);
-  font-family: courier;
+  font-family: "GoogleSans-Regular";
   padding: 10px;
 }
 
@@ -30,7 +30,7 @@ body {
 }
 
 .recppe-detail-header {
-  font-style: italic;
+  font-family: "GoogleSans-Italic";
   font-size: 2vw;
 }
 

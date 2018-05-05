@@ -1,5 +1,6 @@
 body {
   margin: 0px;
+  font-family: "GoogleSans-Regular";
 }
 .wrapper {
   display: flex;
