@@ -60,6 +60,10 @@ type slideTemplateParams struct {
 	MissingItems []Item
 }
 
+type cartImageTemplateParams struct {
+	DeviceId string
+}
+
 func init() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/setting", settingHandler)
@@ -67,6 +71,7 @@ func init() {
 	http.HandleFunc("/display", displayByDeviceHandler)
 	http.HandleFunc("/displayByDevice", displayByDeviceHandler)
 	http.HandleFunc("/slide", slideHandler)
+	http.HandleFunc("/cartImage", cartImageHandler)
 }
 
 func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
@@ -274,5 +279,13 @@ func slideHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	template := template.Must(template.ParseFiles("slide.html"))
 	template.Execute(w, params)
+	return
+}
+
+func cartImageHandler(w http.ResponseWriter, r *http.Request) {
+	cartImageTemplate := template.Must(template.ParseFiles("cartImage.html"))
+	params := cartImageTemplateParams{}
+	params.DeviceId = r.FormValue("deviceId")
+	cartImageTemplate.Execute(w, params)
 	return
 }

@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Shopping Navigator Demo</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="static/css/bulma.min.css">
+  <link rel="stylesheet" type="text/css" href="static/css/style.css">
+  <script src="static/js/jquery.min.js"></script>
+  <script src="static/js/cartImage.js"></script>
+  <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <form class="header-box" name="form" action="/setting" method="post">
+        <div class="control">
+          <div class="select is-small is-info is-rounded">
+            <select name="deviceId" id="deviceId">
+              <option value="picamera01" selected>camera1</option>
+              <option value="picamera02">camera2</option>
+            </select>
+          </div>
+        </div>
+    </form>
+    <div class="wrapper">
+      <div class="container left">
+        <div class="content">
+          <span class="content-header">
+            <i class="material-icons" title="raspberry pi">developer_board</i>
+            <i class="material-icons light-grey">add</i>
+            <i class="material-icons camera" title="camera">linked_camera</i>
+          </span>
+          <div>
+            <img id="src_image" src="https://storage.googleapis.com/gcp-iost-images/annotated/{{.DeviceId}}/annotated.jpg" />
+          </div>
+          <div class="content-footer">&nbsp;</div>
+          </div>
+      </div>
+    </div>
+    <div class="footer-logo">
+      <img src="./static/img/logo_groovenauts_2018_type1.png"/>
+    </div>
+  </div>
+</body>
+</html>
