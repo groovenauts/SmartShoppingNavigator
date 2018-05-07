@@ -16,7 +16,7 @@ import (
 
 const DefaultSeason = "spring"
 const DefaultPeriod = "morning"
-const DefaultDeviceId = "picamera01"
+const DefaultDeviceId = "picamera02"
 
 type Setting struct {
 	Season   string `json:"season" datastore:"season"`
