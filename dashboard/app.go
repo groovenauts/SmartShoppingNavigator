@@ -58,6 +58,7 @@ type slideTemplateParams struct {
 	Title        string
 	ShowDetail   bool
 	MissingItems []Item
+        ReadyToGo    bool
 }
 
 type cartImageTemplateParams struct {
@@ -276,6 +277,7 @@ func slideHandler(w http.ResponseWriter, r *http.Request) {
 		Title:        title,
 		ShowDetail:   len(missing) > 0,
 		MissingItems: missingDetails,
+                ReadyToGo:    (len(missing) == 0) && (item != "supermarket"),
 	}
 	template := template.Must(template.ParseFiles("slide.html"))
 	template.Execute(w, params)
