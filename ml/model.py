@@ -2,6 +2,8 @@ import tensorflow as tf
 
 SHOPPING_ITEMS = ["onion", "tomato", "potato", "paprika", "eggplant", "beef", "pork", "chicken", "banana", "corn"]
 HISTORY_SIZE=4
+NUM_UNIT1=80
+NUM_UNIT2=40
 
 def model_fn(features, labels, mode):
     with tf.variable_scope("inputs/carts"):
@@ -17,6 +19,8 @@ def model_fn(features, labels, mode):
         time_table = tf.contrib.lookup.index_table_from_tensor(["morning", "noon", "evening"])
         time = tf.reshape(tf.one_hot(time_table.lookup(features["time"]), 3, on_value=1.0, off_value=0.0), [-1, 3])
     x = tf.concat([cart, season, time], axis=1)
+    x = tf.layers.dense(inputs=x, units=NUM_UNIT1, activation=tf.nn.relu)
+    x = tf.layers.dense(inputs=x, units=NUM_UNIT2, activation=tf.nn.relu)
     with tf.variable_scope("output"):
         logits = tf.layers.dense(inputs=x, units=(len(SHOPPING_ITEMS)+1), activation=None)
 
