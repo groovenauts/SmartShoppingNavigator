@@ -17,7 +17,7 @@ spec:
           value: MY-PROJECT-ID
         - name: INPUT_SUBSCRIPTION
           value: MY-SUBSCRIPTION
-        - name: BUCKET
+        - name: SAVE_BUCKET
           value: my-bucket
         - name: ML_MODEL
           value: model_name
