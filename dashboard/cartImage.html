@@ -9,6 +9,9 @@
   <link rel="stylesheet" type="text/css" href="static/css/bulma.min.css">
   <link rel="stylesheet" type="text/css" href="static/css/style.css">
   <script src="static/js/jquery.min.js"></script>
+  <script>
+    document.imageBucket = "{{.ImageBucket}}";
+  </script>
   <script src="static/js/cartImage.js"></script>
   <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.1/moment.min.js"></script>
@@ -34,7 +37,7 @@
             <i class="material-icons camera" title="camera">linked_camera</i>
           </span>
           <div>
-            <img id="src_image" src="https://storage.googleapis.com/gcp-iost-images/annotated/{{.DeviceId}}/annotated.jpg" />
+            <img id="src_image" src="https://storage.googleapis.com/{{.ImageBucket}}/annotated/{{.DeviceId}}/annotated.jpg" />
           </div>
           <div class="content-footer">&nbsp;</div>
           </div>

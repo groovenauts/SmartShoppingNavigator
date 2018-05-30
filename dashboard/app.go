@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -44,7 +45,8 @@ type Item struct {
 }
 
 type indexTemplateParams struct {
-	Setting Setting
+	Setting     Setting
+	ImageBucket string
 }
 
 type displayTemplateParams struct {
@@ -58,11 +60,20 @@ type slideTemplateParams struct {
 	Title        string
 	ShowDetail   bool
 	MissingItems []Item
-        ReadyToGo    bool
+	ReadyToGo    bool
 }
 
 type cartImageTemplateParams struct {
-	DeviceId string
+	DeviceId    string
+	ImageBucket string
+}
+
+func getImageBucket() string {
+	s := os.Getenv("IMAGE_BUCKET")
+	if s == "" {
+		s = "gcp-iost-images"
+	}
+	return s
 }
 
 func init() {
@@ -136,6 +147,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		params.Setting.Period = DefaultPeriod
 		params.Setting.DeviceId = DefaultDeviceId
 	}
+	params.ImageBucket = getImageBucket()
 	indexTemplate.Execute(w, params)
 	return
 }
@@ -277,7 +289,7 @@ func slideHandler(w http.ResponseWriter, r *http.Request) {
 		Title:        title,
 		ShowDetail:   len(missing) > 0,
 		MissingItems: missingDetails,
-                ReadyToGo:    (len(missing) == 0) && (item != "supermarket"),
+		ReadyToGo:    (len(missing) == 0) && (item != "supermarket"),
 	}
 	template := template.Must(template.ParseFiles("slide.html"))
 	template.Execute(w, params)
@@ -288,6 +300,7 @@ func cartImageHandler(w http.ResponseWriter, r *http.Request) {
 	cartImageTemplate := template.Must(template.ParseFiles("cartImage.html"))
 	params := cartImageTemplateParams{}
 	params.DeviceId = r.FormValue("deviceId")
+	params.ImageBucket = getImageBucket()
 	cartImageTemplate.Execute(w, params)
 	return
 }

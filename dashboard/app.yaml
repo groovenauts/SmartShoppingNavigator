@@ -6,3 +6,7 @@ handlers:
   static_dir: static
 - url: "/.*"
   script: _go_app
+
+env_variables:
+    IMAGE_BUCKET: gcp-iost-images
+

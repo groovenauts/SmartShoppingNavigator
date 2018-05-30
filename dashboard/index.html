@@ -9,6 +9,9 @@
   <link rel="stylesheet" type="text/css" href="static/css/fonts.css">
   <link rel="stylesheet" type="text/css" href="static/css/bulma.min.css">
   <link rel="stylesheet" type="text/css" href="static/css/style.css">
+  <script>
+    document.imageBucket = "{{.ImageBucket}}";
+  </script>
   <script src="static/js/jquery.min.js"></script>
   <script src="static/js/main.js"></script>
   <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
@@ -55,7 +58,7 @@
             <i class="material-icons camera" title="camera">linked_camera</i>
           </span>
           <div>
-            <img id="src_image" src="https://storage.googleapis.com/gcp-iost-images/annotated/{{.Setting.DeviceId}}/annotated.jpg" />
+            <img id="src_image" src="https://storage.googleapis.com/{{.ImageBucket}}/annotated/{{.Setting.DeviceId}}/annotated.jpg" />
           </div>
           <div class="content-footer">&nbsp;</div>
           </div>
