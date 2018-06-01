@@ -64,3 +64,4 @@ Edit `/home/pi/watchdog.conf` to specify the GCP project, Cloud IoT registry/dev
 ```
 $ sudo systemctl enable capture
 $ sudo systemctl enable dashboard
+```
