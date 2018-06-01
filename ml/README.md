@@ -28,10 +28,14 @@ See [Deploying Models](https://cloud.google.com/ml-engine/docs/tensorflow/deploy
 
 ```
 gcloud --project=PROJECT ml-engine models create MODEL
-gcloud --project=PROJECT ml-engine versions create VERSION --model MODEL --origin GCS_URL_OF_SAVED_MODEL --runtime-version=1.8
+gcloud --project=PROJECT ml-engine versions create VERSION --model MODEL --origin GCS_URL_OF_SAVED_MODEL --config=ml_engine_versions.yaml
 ```
 
 Note that you should create two ML engine models and deploy models under each of them.
 The ML Engine model names should be specified in gke/deployment.yml.
 See [gke/deployment.yml.example](../gke/deployment.yml.example).
 
+Please note that the config file [ml_engine_versions.yaml](ml_engine_versions.yaml) used in above commands contains [autoScaling](https://cloud.google.com/ml-engine/reference/rest/v1/projects.models.versions#autoscaling) parameter.
+The ML Engine version deployed with the configuration always running at least one node for online prediction.
+As a result each ML models cost for online prediction even if you don't run the demo applications.
+See [Pricing](https://cloud.google.com/ml-engine/docs/pricing) page for details.

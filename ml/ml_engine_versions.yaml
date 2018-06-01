@@ -1,0 +1,3 @@
+runtimeVersion: '1.8'
+autoScaling:
+  minNodes: 1  # The minimum number of nodes to allocate for this model.
