@@ -349,6 +349,10 @@ def main(config)
         else
           # new item
           history << objs
+          # shift old history to get rid of Datastore limitation (1500 bytes for each property)
+          if history.size > 4
+            history = history[-4, 4]
+          end
           $stdout.puts("store new cart status")
           datastore.put_cart(device, history)
           $stdout.puts("start predict next item")
