@@ -49,7 +49,7 @@ $ sudo rsync -auz etc/ /etc/
 The corresponding `device` resource should be created in [Cloud IoT Core](https://cloud.google.com/iot-core/).
 Please read [Creating Registries and Devices](https://cloud.google.com/iot/docs/how-tos/devices) for details.
 
-During creating device in Cloud IoT Core, you should [create device key paire](https://cloud.google.com/iot/docs/how-tos/credentials/keys) to authenticate the device.
+During creating device in Cloud IoT Core, you should [create device key pairs](https://cloud.google.com/iot/docs/how-tos/credentials/keys) to authenticate the device.
 Smart Shopping Navigator demo applications support only ES256 key.
 Please generate ES256 key pair.
 
