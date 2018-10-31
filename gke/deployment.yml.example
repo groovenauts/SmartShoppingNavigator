@@ -2,8 +2,12 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: iost-worker
+  label: iost
 spec:
   replicas: 2
+  selector:
+    matchLabels:
+      app: iost
   template:
     metadata:
       labels:
@@ -18,13 +22,13 @@ spec:
         - name: INPUT_SUBSCRIPTION
           value: MY-SUBSCRIPTION
         - name: SAVE_BUCKET
-          value: my-bucket
+          value: MY-BUCKET
         - name: ML_MODEL
-          value: model_name
+          value: MODEL_NAME
         - name: BUCKET_PREDICTION_MODEL
-          value: model_name
+          value: MODEL_NAME
         - name: IOT_REGISTRY
-          value: registry_name
+          value: REGISTRY_NAME
         - name: SCORE_THRESHOLD
           value: "0.2"
         resources:
