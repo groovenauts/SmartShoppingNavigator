@@ -91,7 +91,7 @@ func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
 	setting := new(Setting)
 	e := datastore.Get(ctx, key, setting)
 	if e != nil {
-		if e.Error() == "datastore: no such entity" {
+		if e.Error() == "datastore: no such entity" || strings.Index(e.Error(), "no such struct field") >= 0 {
 			e = nil
 		}
 		return nil, nil, e
