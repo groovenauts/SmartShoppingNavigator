@@ -1,23 +1,25 @@
-package dashboard
+package main
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/log"
+	"cloud.google.com/go/datastore"
+	"golang.org/x/oauth2/google"
 )
 
 const DefaultSeason = "spring"
 const DefaultPeriod = "morning"
 const DefaultDeviceId = "picamera02"
+
+var projectID string
 
 type Setting struct {
 	Season   string `json:"season" datastore:"season"`
@@ -76,20 +78,14 @@ func getImageBucket() string {
 	return s
 }
 
-func init() {
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/setting", settingHandler)
-	http.HandleFunc("/device", getDeviceHandler)
-	http.HandleFunc("/display", displayByDeviceHandler)
-	http.HandleFunc("/displayByDevice", displayByDeviceHandler)
-	http.HandleFunc("/slide", slideHandler)
-	http.HandleFunc("/cartImage", cartImageHandler)
-}
-
 func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
-	key := datastore.NewKey(ctx, "Setting", "master", 0, nil)
+	client, e := datastore.NewClient(ctx, projectID)
+	if e != nil {
+		return nil, nil, e
+	}
+	key := datastore.NameKey("Setting", "master", nil)
 	setting := new(Setting)
-	e := datastore.Get(ctx, key, setting)
+	e = client.Get(ctx, key, setting)
 	if e != nil {
 		if e.Error() == "datastore: no such entity" || strings.Index(e.Error(), "no such struct field") >= 0 {
 			e = nil
@@ -100,9 +96,13 @@ func getSetting(ctx context.Context) (*datastore.Key, *Setting, error) {
 }
 
 func getDevice(ctx context.Context, deviceId string) (*datastore.Key, *Device, error) {
-	key := datastore.NewKey(ctx, "Device", deviceId, 0, nil)
+	client, e := datastore.NewClient(ctx, projectID)
+	if e != nil {
+		return nil, nil, e
+	}
+	key := datastore.NameKey("Device", deviceId, nil)
 	device := new(Device)
-	e := datastore.Get(ctx, key, device)
+	e = client.Get(ctx, key, device)
 	if e != nil {
 		if e.Error() == "datastore: no such entity" {
 			e = nil
@@ -113,9 +113,13 @@ func getDevice(ctx context.Context, deviceId string) (*datastore.Key, *Device, e
 }
 
 func getItem(ctx context.Context, name string) (*datastore.Key, *Item, error) {
-	key := datastore.NewKey(ctx, "Item", name, 0, nil)
+	client, e := datastore.NewClient(ctx, projectID)
+	if e != nil {
+		return nil, nil, e
+	}
+	key := datastore.NameKey("Item", name, nil)
 	item := new(Item)
-	e := datastore.Get(ctx, key, item)
+	e = client.Get(ctx, key, item)
 	if e != nil {
 		if e.Error() == "datastore: no such entity" {
 			e = nil
@@ -130,12 +134,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	ctx := appengine.NewContext(r)
+	ctx := r.Context()
 	indexTemplate := template.Must(template.ParseFiles("index.html"))
 	params := indexTemplateParams{}
 	_, setting, e := getSetting(ctx)
 	if e != nil {
-		log.Errorf(ctx, "Failed to get setting: %v", e)
+		log.Printf("Failed to get setting: %v", e)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "Failed to get setting: ", e)
 		return
@@ -153,23 +157,28 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func settingHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+	ctx := r.Context()
+	client, e := datastore.NewClient(ctx, projectID)
+	if e != nil {
+		log.Printf("Connecting Datastore: %v", e)
+		return
+	}
 	key, setting, e := getSetting(ctx)
 	if e != nil {
-		log.Errorf(ctx, "Getting settings: %v", e)
+		log.Printf("Getting settings: %v", e)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "Getting setting failed: ", e)
 		return
 	}
 	if setting == nil {
 		// Generate initial setting
-		key = datastore.NewKey(ctx, "Setting", "master", 0, nil)
+		key = datastore.NameKey("Setting", "master", nil)
 		setting = new(Setting)
 		setting.Season = DefaultSeason
 		setting.Period = DefaultPeriod
 		setting.DeviceId = DefaultDeviceId
-		if _, e := datastore.Put(ctx, key, setting); e != nil {
-			log.Errorf(ctx, "Failed to put setting: %v", e)
+		if _, e := client.Put(ctx, key, setting); e != nil {
+			log.Printf("Failed to put setting: %v", e)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, "Failed to put setting: ", e)
 			return
@@ -197,8 +206,8 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	if setting.DeviceId == "" {
 		setting.DeviceId = DefaultDeviceId
 	}
-	if _, err := datastore.Put(ctx, key, setting); err != nil {
-		log.Errorf(ctx, "Failed to put setting : %v", err)
+	if _, err := client.Put(ctx, key, setting); err != nil {
+		log.Printf("Failed to put setting : %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, "Failed to put setting : ", err)
 		return
@@ -208,7 +217,7 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDeviceHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+	ctx := r.Context()
 	deviceId := r.FormValue("deviceId")
 	if deviceId == "" {
 		deviceId = DefaultDeviceId
@@ -228,7 +237,7 @@ func getDeviceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+	ctx := r.Context()
 	deviceId := r.FormValue("deviceId")
 	if deviceId == "" {
 		deviceId = DefaultDeviceId
@@ -243,12 +252,12 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 		//items = []string{"supermarket"}
 		items = []string{"{\"title\":\"Healthy salad\", \"missingItems\":\"carrot,paprika,tomato\", \"key\":\"bowl-bright-close-up-248509\"}"}
 	}
-	log.Infof(ctx, "Recommendation for device(%v) is %v", deviceId, items)
+	log.Printf("Recommendation for device(%v) is %v", deviceId, items)
 
 	recommends := make([]Recommend, len(items))
 	for i := 0; i < len(items); i++ {
 		if e := json.Unmarshal([]byte(items[i]), &recommends[i]); e != nil {
-			log.Errorf(ctx, "Failed to parse JSON %v: %v", items[i], e)
+			log.Printf("Failed to parse JSON %v: %v", items[i], e)
 		}
 	}
 	params := displayTemplateParams{
@@ -262,7 +271,7 @@ func displayByDeviceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func slideHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+	ctx := r.Context()
 	item := r.FormValue("item")
 	title := r.FormValue("title")
 	missing := r.FormValue("missingItems")
@@ -303,4 +312,30 @@ func cartImageHandler(w http.ResponseWriter, r *http.Request) {
 	params.ImageBucket = getImageBucket()
 	cartImageTemplate.Execute(w, params)
 	return
+}
+
+func main() {
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/setting", settingHandler)
+	http.HandleFunc("/device", getDeviceHandler)
+	http.HandleFunc("/display", displayByDeviceHandler)
+	http.HandleFunc("/displayByDevice", displayByDeviceHandler)
+	http.HandleFunc("/slide", slideHandler)
+	http.HandleFunc("/cartImage", cartImageHandler)
+
+	credentials, e := google.FindDefaultCredentials(context.Background())
+	if e != nil {
+		log.Fatal(e)
+	}
+
+	projectID = credentials.ProjectID
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+
+	log.Printf("Listening on port %s", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
